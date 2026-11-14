@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard Tester</title>
+<style>
+  :root { --bg:#f4f4f0; --fg:#1a1a1a; --key:#fff; --line:#cfcfc6; --tested:#a5d6a7; --down:#1565c0; --downfg:#fff; --card:#fff; --bad:#d32f2f; --warn:#ef6c00; --ok:#2e7d32; --blue:#1565c0; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121212; --fg:#eee; --key:#262626; --line:#444; --tested:#2e5d31; --down:#64b5f6; --downfg:#000; --card:#1e1e1e; --bad:#ef5350; --warn:#ffa726; --ok:#66bb6a; --blue:#64b5f6; }
+  }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; }
+  h1 { margin:0 0 4px; }
+  .sub { opacity:.7; font-size:14px; margin-bottom:12px; }
+  .banner { background:var(--warn); color:#000; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:14px; display:flex; gap:10px; align-items:center; justify-content:space-between; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .tab { background:var(--card); color:var(--fg); border:1px solid var(--line); }
+  .tab.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .toolbar label { display:flex; gap:6px; align-items:center; font-size:13px; }
+  select, input[type=number] { padding:6px 8px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); font-size:13px; }
+  button { padding:9px 14px; border:none; border-radius:8px; background:var(--blue); color:#fff; font-weight:600; cursor:pointer; font-size:13px; }
+  button.small { padding:5px 10px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin-bottom:12px; }
+  .stats .card { margin:0; padding:10px 14px; }
+  .card .label { font-size:11px; text-transform:uppercase; opacity:.6; }
+  .card .val { font-size:20px; font-weight:700; min-width:60px; }
+  .board { --u:46px; display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; }
+  .block { flex:none; }
+  .row { display:flex; height:var(--u); }
+  .numpad { display:grid; grid-template-columns:repeat(4, var(--u)); grid-template-rows:repeat(6, var(--u)); }
+  .key { flex:none; margin:2px; border:1px solid var(--line); border-radius:6px; background:var(--key); display:flex; align-items:center; justify-content:center; font-size:12px; user-select:none; transition:background .05s; overflow:hidden; }
+  .row .key { width:calc(var(--w) * var(--u) - 4px); }
+  .spacer { flex:none; width:calc(var(--w) * var(--u)); }
+  .key.tested { background:var(--tested); }
+  .key.chat { outline:2px solid var(--bad); outline-offset:-2px; }
+  .key.stuck { outline:2px dashed var(--warn); outline-offset:-2px; animation:pulse .8s infinite alternate; }
+  .key.down { background:var(--down); color:var(--downfg); transform:translateY(1px); }
+  @keyframes pulse { from { opacity:1; } to { opacity:.55; } }
+  .legend { font-size:12px; opacity:.75; }
+  .hint { font-size:13px; opacity:.7; margin-top:6px; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+  #log { font-family:ui-monospace,monospace; font-size:13px; max-height:200px; overflow:auto; }
+  #log div { padding:2px 0; opacity:.85; }
+  .big { font-size:26px; font-weight:700; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip { border:1px solid var(--line); border-radius:6px; padding:3px 8px; font-size:13px; }
+  .chip small { opacity:.55; margin-left:4px; }
+  .ok-text { color:var(--ok); font-weight:600; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:8px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .tt { font-family:ui-monospace,monospace; font-size:20px; line-height:1.7; white-space:pre-wrap; margin:12px 0; padding:12px; border:1px solid var(--line); border-radius:8px; }
+  .tt span { opacity:.55; }
+  .tt .ok { opacity:1; color:var(--ok); }
+  .tt .bad { opacity:1; color:var(--bad); background:rgba(211,47,47,.25); }
+  .tt .cur { opacity:1; border-left:2px solid var(--blue); margin-left:-2px; }
+  .tt-stats { font-size:15px; margin-bottom:6px; }
+  .gp-title { font-weight:700; margin-bottom:8px; word-break:break-word; }
+  .gp-btns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .gp-btn { position:relative; width:44px; height:44px; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:11px; overflow:hidden; }
+  .gp-btn span { position:relative; z-index:1; }
+  .gp-btn i { position:absolute; left:0; bottom:0; width:100%; height:0; background:var(--blue); opacity:.45; }
+  .gp-btn.tested { background:var(--tested); }
+  .gp-btn.on { background:var(--down); color:var(--downfg); }
+  .gp-axis { display:flex; align-items:center; gap:8px; font-size:12px; margin:3px 0; }
+  .gp-axis span { width:24px; }
+  .gp-axis .bar { position:relative; flex:1; height:10px; background:var(--line); border-radius:5px; overflow:hidden; }
+  .gp-axis .bar b { position:absolute; top:0; height:100%; background:var(--blue); }
+  .gp-axis em { width:44px; text-align:right; font-style:normal; font-family:ui-monospace,monospace; }
+  .sticks { display:flex; gap:14px; margin:8px 0; }
+  .stick { position:relative; width:72px; height:72px; border:2px solid var(--line); border-radius:50%; }
+  .stick i { position:absolute; width:14px; height:14px; border-radius:50%; background:var(--blue); transform:translate(-50%,-50%); left:50%; top:50%; }
+</style>
+</head>
+<body>
+
+<div id="mobile" class="banner" hidden>
+  <span>📱 This tool needs a <b>hardware keyboard</b>. Phone and tablet on-screen keyboards don't report real key events.</span>
+  <button class="small" id="mobileX">Dismiss</button>
+</div>
+
+<h1>Keyboard Tester</h1>
+<div class="sub">Press any key. Blue = held, green = works, red outline = chatter (double-press), orange dashed = stuck.</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab on" data-tab="live">Live</button>
+  <button class="tab" data-tab="report">Report</button>
+  <button class="tab" data-tab="typing">Typing test</button>
+  <button class="tab" data-tab="gamepad">Gamepad</button>
+</div>
+
+<div id="kbd">
+  <div class="toolbar">
+    <label>Size
+      <select id="size">
+        <option value="full" selected>Full-size</option>
+        <option value="tkl">TKL (no numpad)</option>
+        <option value="75">75%</option>
+        <option value="60">60%</option>
+      </select>
+    </label>
+    <label>Language
+      <select id="lang">
+        <option value="us" selected>US (ANSI)</option>
+        <option value="uk">UK (ISO)</option>
+        <option value="de">German QWERTZ (ISO)</option>
+        <option value="fr">French AZERTY (ISO)</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="mac"> Mac labels</label>
+    <label><input type="checkbox" id="auto" checked> Auto-detect layout</label>
+    <label>View
+      <select id="view">
+        <option value="status" selected>Tested status</option>
+        <option value="presses">Press count heatmap</option>
+        <option value="hold">Average hold time</option>
+        <option value="chatter">Chatter</option>
+        <option value="errors">Typing errors</option>
+        <option value="slow">Typing speed (slowest)</option>
+      </select>
+    </label>
+    <label>Chatter under <input type="number" id="chatMs" value="40" min="1" max="500" style="width:64px"> ms</label>
+    <label><input type="checkbox" id="sound"> Sound</label>
+    <button id="reset">Reset</button>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="stats">
+    <div class="card"><div class="label">Key</div><div class="val" id="k">–</div></div>
+    <div class="card"><div class="label">Code</div><div class="val" id="c">–</div></div>
+    <div class="card"><div class="label">keyCode</div><div class="val" id="kc">–</div></div>
+    <div class="card"><div class="label">Last hold</div><div class="val" id="hold">–</div></div>
+    <div class="card"><div class="label">Since last key</div><div class="val" id="gap">–</div></div>
+    <div class="card"><div class="label">Tested</div><div class="val" id="count">0 / 0</div></div>
+    <div class="card"><div class="label">Chatter events</div><div class="val" id="chat">0</div></div>
+    <div class="card"><div class="label">Max at once</div><div class="val" id="maxroll">0</div></div>
+  </div>
+</div>
+
+<section id="tab-live">
+  <div class="card">
+    <b>Rollover test</b>
+    <div class="hint">Press and hold as many keys as you can at the same time.</div>
+    <div class="big"><span id="heldNow">0</span> held · max <span id="maxroll2">0</span></div>
+    <div id="heldList" class="hint">–</div>
+    <div id="rollNote" class="hint"></div>
+  </div>
+  <div class="card"><b>Log</b><div id="log"></div></div>
+  <div class="hint">Fn and some media keys can't be detected by browsers. Browser shortcuts like Ctrl+W can't be blocked.</div>
+</section>
+
+<section id="tab-report" hidden>
+  <div class="card">
+    <b>Missing keys</b> <span id="missCount" class="hint"></span>
+    <div id="missing" class="chips"></div>
+  </div>
+  <div class="card"><b>Chatter / double-press</b><div id="chatTable"></div></div>
+  <div class="card"><b>Rollover</b><div id="rollReport" class="hint"></div></div>
+  <div class="card"><b>Stuck keys</b><div id="stuckReport" class="hint"></div></div>
+  <div class="controls">
+    <button id="copyMiss">Copy missing keys</button>
+    <button id="copyRep">Copy report</button>
+    <button id="dlRep">Download report</button>
+  </div>
+</section>
+
+<section id="tab-typing" hidden>
+  <div class="card">
+    <div class="controls">
+      <label>Words
+        <select id="ttLen"><option>15</option><option selected>25</option><option>50</option></select>
+      </label>
+      <button id="ttNew">New test</button>
+    </div>
+    <div id="ttText" class="tt"></div>
+    <div class="tt-stats">WPM <b id="wpm">0</b> · Accuracy <b id="acc">100%</b> · Time <b id="ttTime">0.0s</b></div>
+    <div id="ttRes" class="hint"></div>
+    <div class="hint">The timer starts on your first key. Backspace works. Press Enter for a new test when finished. Set View to "Typing errors" or "Typing speed" to see which keys are weakest on the keyboard above.</div>
+  </div>
+</section>
+
+<section id="tab-gamepad" hidden>
+  <div id="gpNone" class="card">No controller detected. Connect one and press any button on it (browsers hide controllers until you do).</div>
+  <div id="gpList"></div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isField = t => t && t.matches && t.matches('input,select,textarea');
+
+// ---------- layouts ----------
+const LANGS = {
+  us:{ name:'US (ANSI)', iso:false, map:{} },
+  uk:{ name:'UK (ISO)', iso:true, map:{ Quote:"'", Backslash:'#', IntlBackslash:'\\' } },
+  de:{ name:'German QWERTZ (ISO)', iso:true, map:{ KeyY:'Z', KeyZ:'Y', Minus:'ß', Equal:'´', BracketLeft:'Ü', BracketRight:'+', Semicolon:'Ö', Quote:'Ä', Backslash:'#', Slash:'-', IntlBackslash:'<', Backquote:'^' } },
+  fr:{ name:'French AZERTY (ISO)', iso:true, map:{ KeyQ:'A', KeyA:'Q', KeyW:'Z', KeyZ:'W', Semicolon:'M', KeyM:',', Comma:';', Period:':', Slash:'!', Backquote:'²', Minus:')', Equal:'=', BracketLeft:'^', BracketRight:'$', Quote:'ù', Backslash:'*', IntlBackslash:'<' } }
+};
+const SIZES = { '60':'60%', '75':'75%', tkl:'TKL', full:'Full-size' };
+const ORDER = ['60','75','tkl','full'];
+
+// numpad: [code, label, col, row, colSpan, rowSpan]
+const numpad = [
+  ['NumLock','Num',1,2],['NumpadDivide','/',2,2],['NumpadMultiply','*',3,2],['NumpadSubtract','-',4,2],
+  ['Numpad7','7',1,3],['Numpad8','8',2,3],['Numpad9','9',3,3],['NumpadAdd','+',4,3,1,2],
+  ['Numpad4','4',1,4],['Numpad5','5',2,4],['Numpad6','6',3,4],
+  ['Numpad1','1',1,5],['Numpad2','2',2,5],['Numpad3','3',3,5],['NumpadEnter','Enter',4,5,1,2],
+  ['Numpad0','0',1,6,2,1],['NumpadDecimal','.',3,6]
+];
+
+function spec(sz, lg, mc) {
+  const m = LANGS[lg].map, iso = LANGS[lg].iso;
+  const k = (code, def, w = 1) => ({ code, label: (m[code] !== undefined ? m[code] : def), w });
+  const g = w => ({ gap:true, w });
+  const L = s => [...s].map(c => k('Key' + c, c));
+  const D = [...'1234567890'].map(d => k('Digit' + d, d));
+  const F = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(k('F' + i, 'F' + i)); return r; };
+
+  const r1 = [k('Backquote','`'), ...D, k('Minus','-'), k('Equal','='), k('Backspace', mc ? 'Delete' : 'Backspace', 2)];
+  const r2 = [k('Tab','Tab',1.5), ...L('QWERTYUIOP'), k('BracketLeft','['), k('BracketRight',']'), iso ? g(1.5) : k('Backslash','\\',1.5)];
+  const r3 = [k('CapsLock','Caps',1.75), ...L('ASDFGHJKL'), k('Semicolon',';'), k('Quote',"'"),
+    ...(iso ? [k('Backslash','#'), k('Enter', mc ? 'Return' : 'Enter', 1.25)] : [k('Enter', mc ? 'Return' : 'Enter', 2.25)])];
+  const r4 = sr => [
+    ...(iso ? [k('ShiftLeft','Shift',1.25), k('IntlBackslash','\\')] : [k('ShiftLeft','Shift',2.25)]),
+    ...L('ZXCVBNM'), k('Comma',','), k('Period','.'), k('Slash','/'), k('ShiftRight','Shift',sr)];
+
+  const lm = mc
+    ? [k('ControlLeft','Ctrl',1.25), k('AltLeft','Opt',1.25), k('MetaLeft','Cmd',1.25)]
+    : [k('ControlLeft','Ctrl',1.25), k('MetaLeft','Win',1.25), k('AltLeft','Alt',1.25)];
+  const space = k('Space','Space',6.25);
+  const bottom = compact => {
+    if (compact) {
+      const right = mc ? [k('MetaRight','Cmd'), k('AltRight','Opt')] : [k('AltRight','Alt'), k('ControlRight','Ctrl')];
+      return [...lm, space, ...right, k('ArrowLeft','←'), k('ArrowDown','↓'), k('ArrowRight','→'), g(1)];
+    }
+    const right = mc
+      ? [k('MetaRight','Cmd',1.25), k('AltRight','Opt',1.25), k('ControlRight','Ctrl',1.25), g(1.25)]
+      : [k('AltRight','Alt',1.25), k('MetaRight','Win',1.25), k('ContextMenu','Menu',1.25), k('ControlRight','Ctrl',1.25)];
+    return [...lm, space, ...right];
+  };
+
+  const main = [r1, r2, r3, r4(2.75), bottom(false)];
+  const fRow = [k('Escape','Esc'), g(1), ...F(1,4), g(.5), ...F(5,8), g(.5), ...F(9,12)];
+  const nav = [
+    [k('PrintScreen','PrtSc'), k('ScrollLock','ScrLk'), k('Pause','Pause')],
+    [k('Insert','Ins'), k('Home','Home'), k('PageUp','PgUp')],
+    [k('Delete','Del'), k('End','End'), k('PageDown','PgDn')],
+    [g(3)],
+    [g(1), k('ArrowUp','↑'), g(1)],
+    [k('ArrowLeft','←'), k('ArrowDown','↓'), k('ArrowRight','→')]
+  ];
+
+  if (sz === '60') return [{ rows: main }];
+  if (sz === '75') return [{ rows: [
+    [k('Escape','Esc'), ...F(1,12), k('PrintScreen','PrtSc'), k('Delete','Del'), k('Home','Home')],
+    [...r1, k('PageUp','PgUp')],
+    [...r2, k('PageDown','PgDn')],
+    [...r3, k('End','End')],
+    [...r4(1.75), k('ArrowUp','↑'), g(1)],
+    bottom(true)
+  ]}];
+  if (sz === 'tkl') return [{ rows: [fRow, ...main] }, { rows: nav }];
+  return [{ rows: [fRow, ...main] }, { rows: nav }, { numpad: true }];
+}
+
+function codesIn(sz, lg, mc) {
+  const s = new Set();
+  spec(sz, lg, mc).forEach(b => {
+    if (b.numpad) numpad.forEach(n => s.add(n[0]));
+    else b.rows.forEach(r => r.forEach(k => { if (k.code) s.add(k.code); }));
+  });
+  return s;
+}
+
+// ---------- state ----------
+let size = 'full', lang = 'us', mac = false, view = 'status', auto = true, chatterMs = 40, soundOn = false, tab = 'live';
+const STUCK_MS = 3000;
+let els = {}, labelToCode = {};
+const tested = new Set(), stats = {}, held = new Map(), stuck = new Set(), chatterLog = [], stuckLog = [];
+let maxRoll = 0, lastDownAny = 0, lastResult = null;
+let tt = null, agg = { errMap:{}, timeMap:{}, countMap:{} };
+const newStat = () => ({ count:0, chatter:0, holdSum:0, holds:0, maxHold:0, lastUp:0, minGap:Infinity });
+
+// ---------- board ----------
+function makeKey(code, label) {
+  const el = document.createElement('div');
+  el.className = 'key';
+  el.textContent = label;
+  els[code] = el;
+  if (label.length === 1) labelToCode[label.toUpperCase()] = code;
+  return el;
+}
+
+function buildBoard() {
+  const b = $('board');
+  b.innerHTML = ''; els = {}; labelToCode = {};
+  spec(size, lang, mac).forEach(blk => {
+    const wrap = document.createElement('div');
+    if (blk.numpad) {
+      wrap.className = 'block numpad';
+      numpad.forEach(([code, label, col, row, cs = 1, rs = 1]) => {
+        const el = makeKey(code, label);
+        el.style.gridColumn = `${col} / span ${cs}`;
+        el.style.gridRow = `${row} / span ${rs}`;
+        wrap.appendChild(el);
+      });
+    } else {
+      wrap.className = 'block';
+      blk.rows.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        r.forEach(key => {
+          let el;
+          if (key.gap) { el = document.createElement('div'); el.className = 'spacer'; }
+          else el = makeKey(key.code, key.label);
+          el.style.setProperty('--w', key.w);
+          row.appendChild(el);
+        });
+        wrap.appendChild(row);
+      });
+    }
+    b.appendChild(wrap);
+  });
+  paintAll(); updateStats();
+}
+
+// ---------- painting ----------
+const LEGENDS = {
+  status:'Gray = untested · Green = works · Blue = held · Red outline = chatter · Orange dashed = stuck',
+  presses:'Heatmap of presses per key (green = few, red = many)',
+  hold:'Heatmap of average hold time per key (green = quick, red = long)',
+  chatter:'Red keys registered double-presses (darker = more)',
+  errors:'Heatmap of typing-test mistakes per key (run the Typing test first)',
+  slow:'Heatmap of slowest keys in the typing test (average ms between keystrokes)'
+};
+const heatColor = t => `hsl(${Math.round(120 - 120 * Math.min(1, t))},65%,62%)`;
+
+function charToCode(ch) { return ch === ' ' ? 'Space' : labelToCode[ch.toUpperCase()]; }
+function ttCodeStats() {
+  const err = {}, slow = {};
+  for (const ch in agg.errMap) { const c = charToCode(ch); if (c) err[c] = (err[c] || 0) + agg.errMap[ch]; }
+  for (const ch in agg.timeMap) { const c = charToCode(ch); if (c && agg.countMap[ch]) slow[c] = agg.timeMap[ch] / agg.countMap[ch]; }
+  return { err, slow };
+}
+
+function paintAll() {
+  const t = ttCodeStats();
+  const fns = {
+    presses: c => stats[c] ? stats[c].count : 0,
+    hold: c => { const s = stats[c]; return s && s.holds ? s.holdSum / s.holds : 0; },
+    chatter: c => stats[c] ? stats[c].chatter : 0,
+    errors: c => t.err[c] || 0,
+    slow: c => t.slow[c] || 0
+  };
+  const f = fns[view];
+  let mx = 0;
+  if (f) for (const c in els) mx = Math.max(mx, f(c));
+  for (const c in els) {
+    const el = els[c], s = stats[c], isHeld = held.has(c);
+    let cls = 'key';
+    el.style.background = ''; el.style.color = '';
+    if (isHeld) cls += ' down';
+    if (stuck.has(c)) cls += ' stuck';
+    if (view === 'status') {
+      if (tested.has(c)) cls += ' tested';
+      if (s && s.chatter) cls += ' chat';
+    } else if (f && !isHeld) {
+      const v = f(c);
+      if (v > 0 && mx > 0) {
+        el.style.background = view === 'chatter' ? `hsl(0,70%,${70 - Math.round(30 * v / mx)}%)` : heatColor(v / mx);
+        el.style.color = '#111';
+      }
+    }
+    el.className = cls;
+    if (s && s.count) el.title = `${c}: ${s.count} presses` + (s.holds ? `, avg hold ${Math.round(s.holdSum / s.holds)} ms` : '') + `, chatter ${s.chatter}`;
+  }
+}
+
+function updateLegend() { $('legend').textContent = LEGENDS[view]; }
+
+// ---------- stats / log ----------
+function countTested() { let n = 0; for (const c in els) if (tested.has(c)) n++; return n; }
+function rollNote() {
+  if (!maxRoll) return 'Hold several keys at once to measure rollover.';
+  if (maxRoll >= 10) return 'NKRO-like (10+ keys at once)';
+  if (maxRoll >= 6) return 'Typical USB 6-key rollover or better';
+  if (maxRoll >= 3) return 'Below 6: some keys may be dropped in fast typing or games (your OS or browser can also limit this)';
+  return 'Hold more keys at once to measure rollover.';
+}
+function updateStats() {
+  $('count').textContent = countTested() + ' / ' + Object.keys(els).length;
+  $('chat').textContent = chatterLog.length;
+  $('maxroll').textContent = maxRoll;
+  $('maxroll2').textContent = maxRoll;
+  $('heldNow').textContent = held.size;
+  $('heldList').textContent = [...held.keys()].join(' + ') || '–';
+  $('rollNote').textContent = rollNote();
+  if (tab === 'report') renderReport();
+}
+function addLog(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  $('log').prepend(d);
+  while ($('log').children.length > 60) $('log').lastChild.remove();
+}
+
+// ---------- sound ----------
+let actx = null;
+function click(code) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    let h = 0; for (const ch of code) h = (h * 31 + ch.charCodeAt(0)) % 500;
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = 'triangle'; o.frequency.value = 250 + h;
+    g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .05);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + .06);
+  } catch (e) {}
+}
+
+// ---------- auto layout ----------
+function autoLayout(code) {
+  if (!auto) return;
+  if (code === 'IntlBackslash' && !LANGS[lang].iso) {
+    lang = 'uk'; $('lang').value = 'uk';
+    addLog('Auto-detected ISO layout, switched to UK (ISO)');
+    buildBoard(); return;
+  }
+  for (let i = ORDER.indexOf(size) + 1; i < ORDER.length; i++) {
+    if (codesIn(ORDER[i], lang, mac).has(code)) {
+      size = ORDER[i]; $('size').value = size;
+      addLog('Auto-switched layout to ' + SIZES[size]);
+      buildBoard(); return;
+    }
+  }
+}
+
+// ---------- keyboard events ----------
+addEventListener('keydown', e => {
+  if (isField(e.target)) return;
+  e.preventDefault();
+  $('mobile').hidden = true;
+  const now = e.timeStamp, code = e.code;
+
+  $('k').textContent = e.key === ' ' ? 'Space' : e.key;
+  $('c').textContent = code;
+  $('kc').textContent = e.keyCode;
+
+  if (!els[code]) autoLayout(code);
+  const s = stats[code] || (stats[code] = newStat());
+
+  if (!e.repeat) {
+    s.count++;
+    if (s.lastUp && !held.has(code)) {
+      const gap = now - s.lastUp;
+      if (gap < chatterMs) {
+        s.chatter++; s.minGap = Math.min(s.minGap, gap);
+        chatterLog.push({ code, gap, at: new Date().toISOString() });
+        addLog(`⚠ chatter on ${code}: re-pressed ${gap.toFixed(1)} ms after release`);
+      }
+    }
+    if (lastDownAny) $('gap').textContent = Math.round(now - lastDownAny) + ' ms';
+    lastDownAny = now;
+    held.set(code, now);
+    tested.add(code);
+    maxRoll = Math.max(maxRoll, held.size);
+    click(code);
+    addLog(`↓ key="${e.key}" code=${code} keyCode=${e.keyCode}` + (els[code] ? '' : '  (not on this layout)'));
+  }
+  if (tab === 'typing') typingKey(e);
+  paintAll(); updateStats();
+});
+
+addEventListener('keyup', e => {
+  if (isField(e.target)) return;
+  e.preventDefault();
+  const code = e.code, now = e.timeStamp;
+  const s = stats[code] || (stats[code] = newStat());
+  if (held.has(code)) {
+    const hold = now - held.get(code);
+    s.holdSum += hold; s.holds++; s.maxHold = Math.max(s.maxHold, hold);
+    held.delete(code); stuck.delete(code);
+    $('hold').textContent = Math.round(hold) + ' ms';
+  } else {
+    tested.add(code); s.count++;
+    addLog(`↑ ${code} (keyup only, no keydown seen)`);
+  }
+  s.lastUp = now;
+  if (e.key === 'Meta') { held.clear(); stuck.clear(); }
+  paintAll(); updateStats();
+});
+
+addEventListener('blur', () => { held.clear(); stuck.clear(); paintAll(); updateStats(); });
+
+setInterval(() => {
+  const now = performance.now();
+  let changed = false;
+  held.forEach((t, c) => {
+    if (now - t > STUCK_MS && !stuck.has(c)) {
+      stuck.add(c);
+      stuckLog.push({ code: c, at: new Date().toISOString() });
+      addLog(`⚠ ${c} held for over ${STUCK_MS / 1000}s (stuck key?)`);
+      changed = true;
+    }
+  });
+  if (changed) { paintAll(); updateStats(); }
+}, 500);
+
+// ---------- typing test ----------
+const WORDS = 'the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us'.split(' ');
+
+function newTest() {
+  const n = +$('ttLen').value, w = [];
+  for (let i = 0; i < n; i++) w.push(WORDS[Math.random() * WORDS.length | 0]);
+  tt = { text: w.join(' '), typed: '', started: false, done: false, start: 0, last: 0, end: 0, errors: 0, keys: 0, errMap: {}, timeMap: {}, countMap: {} };
+  $('ttRes').textContent = '';
+  $('wpm').textContent = '0'; $('acc').textContent = '100%'; $('ttTime').textContent = '0.0s';
+  renderTT();
+}
+function renderTT() {
+  if (!tt) return;
+  let h = '';
+  for (let i = 0; i < tt.text.length; i++) {
+    const ch = tt.text[i];
+    let c = '';
+    if (i < tt.typed.length) c = tt.typed[i] === ch ? 'ok' : 'bad';
+    else if (i === tt.typed.length) c = 'cur';
+    h += `<span class="${c}">${esc(ch)}</span>`;
+  }
+  $('ttText').innerHTML = h;
+}
+function ttCorrect() { let n = 0; for (let i = 0; i < tt.typed.length; i++) if (tt.typed[i] === tt.text[i]) n++; return n; }
+function liveTT() {
+  if (!tt || !tt.started) return;
+  const ms = (tt.done ? tt.end : performance.now()) - tt.start;
+  const min = Math.max(ms, 1) / 60000;
+  $('wpm').textContent = Math.round(ttCorrect() / 5 / min);
+  $('acc').textContent = (tt.keys ? Math.round((tt.keys - tt.errors) / tt.keys * 100) : 100) + '%';
+  $('ttTime').textContent = (ms / 1000).toFixed(1) + 's';
+}
+setInterval(liveTT, 250);
+
+function typingKey(e) {
+  if (!tt) return;
+  if (tt.done) { if (e.key === 'Enter') newTest(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const now = e.timeStamp;
+  if (e.key === 'Backspace') { tt.typed = tt.typed.slice(0, -1); renderTT(); return; }
+  if (e.key.length !== 1 || e.repeat || tt.typed.length >= tt.text.length) return;
+  if (!tt.started) { tt.started = true; tt.start = now; tt.last = now; }
+  const exp = tt.text[tt.typed.length];
+  tt.keys++;
+  if (tt.keys > 1) {
+    for (const o of [agg, tt]) {
+      o.countMap[exp] = (o.countMap[exp] || 0) + 1;
+      o.timeMap[exp] = (o.timeMap[exp] || 0) + (now - tt.last);
+    }
+  }
+  if (e.key !== exp) {
+    tt.errors++;
+    for (const o of [agg, tt]) o.errMap[exp] = (o.errMap[exp] || 0) + 1;
+  }
+  tt.last = now;
+  tt.typed += e.key;
+  renderTT();
+  if (tt.typed.length >= tt.text.length) finishTT(now);
+}
+function finishTT(now) {
+  tt.done = true; tt.end = now;
+  liveTT();
+  const slow = Object.keys(tt.timeMap).filter(c => tt.countMap[c] > 0 && c !== ' ')
+    .map(c => [c, tt.timeMap[c] / tt.countMap[c]]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const errs = Object.entries(tt.errMap).filter(([c]) => c !== ' ').sort((a, b) => b[1] - a[1]).slice(0, 3);
+  lastResult = {
+    wpm: $('wpm').textContent, acc: $('acc').textContent, time: $('ttTime').textContent,
+    slow: slow.map(([c, v]) => `${c} (${Math.round(v)} ms)`), errs: errs.map(([c, n]) => `${c} (${n})`)
+  };
+  $('ttRes').textContent = `Done! ${lastResult.wpm} WPM, ${lastResult.acc} accuracy. ` +
+    `Slowest keys: ${lastResult.slow.join(', ') || '–'}. Most mistakes: ${lastResult.errs.join(', ') || 'none'}. Press Enter for a new test.`;
+  paintAll();
+}
+
+// ---------- report ----------
+function missingKeys() {
+  return Object.entries(els).filter(([c]) => !tested.has(c)).map(([c, el]) => ({ code: c, label: el.textContent }));
+}
+function renderReport() {
+  const miss = missingKeys();
+  $('missCount').textContent = `(${miss.length} of ${Object.keys(els).length})`;
+  $('missing').innerHTML = miss.length
+    ? miss.map(m => `<span class="chip">${esc(m.label)}<small>${esc(m.code)}</small></span>`).join('')
+    : '<span class="ok-text">All keys on this layout have registered 🎉</span>';
+
+  const rows = Object.entries(stats).filter(([, s]) => s.chatter > 0).sort((a, b) => b[1].chatter - a[1].chatter);
+  $('chatTable').innerHTML = rows.length
+    ? '<table><tr><th>Key</th><th>Chatter</th><th>Presses</th><th>Fastest re-press</th></tr>' +
+      rows.map(([c, s]) => `<tr><td>${esc(c)}</td><td>${s.chatter}</td><td>${s.count}</td><td>${s.minGap.toFixed(1)} ms</td></tr>`).join('') + '</table>'
+    : `<div class="hint">None detected. A key counts as chatter if it registers again within ${chatterMs} ms of being released.</div>`;
+
+  $('rollReport').textContent = maxRoll ? `Max ${maxRoll} keys at once. ${rollNote()}` : 'Not measured yet. Hold several keys at once on the Live tab.';
+  $('stuckReport').textContent = stuckLog.length
+    ? stuckLog.map(s => s.code).join(', ') + ` (held more than ${STUCK_MS / 1000}s)`
+    : 'None detected.';
+}
+function buildReport() {
+  const miss = missingKeys();
+  const L = [];
+  L.push('KEYBOARD TEST REPORT');
+  L.push('Date: ' + new Date().toLocaleString());
+  L.push('Browser: ' + navigator.userAgent);
+  L.push(`Layout: ${SIZES[size]} / ${LANGS[lang].name}${mac ? ' / Mac labels' : ''}`);
+  L.push(`Keys tested: ${countTested()} / ${Object.keys(els).length}`);
+  L.push('Missing keys: ' + (miss.length ? miss.map(m => `${m.label} (${m.code})`).join(', ') : 'none'));
+  L.push(`Max simultaneous keys: ${maxRoll} (${rollNote()})`);
+  L.push(`Chatter threshold: ${chatterMs} ms`);
+  const ch = Object.entries(stats).filter(([, s]) => s.chatter > 0);
+  L.push('Chatter: ' + (ch.length ? ch.map(([c, s]) => `${c} x${s.chatter} (fastest ${s.minGap.toFixed(1)} ms, ${s.count} presses)`).join('; ') : 'none'));
+  L.push('Stuck keys: ' + (stuckLog.length ? stuckLog.map(s => s.code).join(', ') : 'none'));
+  if (lastResult) L.push(`Typing test: ${lastResult.wpm} WPM, ${lastResult.acc} accuracy, ${lastResult.time}. Slowest: ${lastResult.slow.join(', ')}. Mistakes: ${lastResult.errs.join(', ') || 'none'}`);
+  return L.join('\n');
+}
+async function copyText(t, btn) {
+  try { await navigator.clipboard.writeText(t); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    ta.remove();
+  }
+  const old = btn.textContent; btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = old, 1200);
+}
+$('copyMiss').onclick = e => copyText(missingKeys().map(m => `${m.label} (${m.code})`).join(', ') || 'No missing keys', e.target);
+$('copyRep').onclick = e => copyText(buildReport(), e.target);
+$('dlRep').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([buildReport()], { type:'text/plain' }));
+  a.download = 'keyboard-report.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ---------- gamepad ----------
+const gpUI = {};
+let gpRaf = 0;
+function gpCreate(p) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card';
+  const title = document.createElement('div');
+  title.className = 'gp-title';
+  title.textContent = `${p.id} (index ${p.index}, mapping: ${p.mapping || 'unknown'})`;
+  wrap.appendChild(title);
+
+  const sum = document.createElement('div'); sum.className = 'hint'; wrap.appendChild(sum);
+
+  const btns = document.createElement('div'); btns.className = 'gp-btns';
+  const bEls = [], bFill = [];
+  p.buttons.forEach((_, i) => {
+    const d = document.createElement('div'); d.className = 'gp-btn';
+    d.innerHTML = `<i></i><span>B${i}</span>`;
+    btns.appendChild(d); bEls.push(d); bFill.push(d.querySelector('i'));
+  });
+  wrap.appendChild(btns);
+
+  const sticks = document.createElement('div'); sticks.className = 'sticks';
+  const dots = [];
+  for (let s = 0; s + 1 < p.axes.length && s < 4; s += 2) {
+    const st = document.createElement('div'); st.className = 'stick';
+    const dot = document.createElement('i'); st.appendChild(dot); sticks.appendChild(st);
+    dots.push([dot, s]);
+  }
+  wrap.appendChild(sticks);
+
+  const axes = document.createElement('div');
+  const aBar = [], aVal = [];
+  p.axes.forEach((_, i) => {
+    const r = document.createElement('div'); r.className = 'gp-axis';
+    r.innerHTML = `<span>A${i}</span><div class="bar"><b></b></div><em>0.00</em>`;
+    axes.appendChild(r); aBar.push(r.querySelector('b')); aVal.push(r.querySelector('em'));
+  });
+  wrap.appendChild(axes);
+
+  const drift = document.createElement('div'); drift.className = 'hint'; wrap.appendChild(drift);
+
+  if (p.vibrationActuator) {
+    const v = document.createElement('button'); v.textContent = 'Test vibration'; v.style.marginTop = '8px';
+    v.onclick = () => {
+      const pad = navigator.getGamepads()[p.index];
+      if (pad && pad.vibrationActuator) pad.vibrationActuator.playEffect('dual-rumble', { duration: 400, strongMagnitude: 1, weakMagnitude: 1 }).catch(() => {});
+    };
+    wrap.appendChild(v);
+  }
+  return { wrap, id: p.id, nb: p.buttons.length, na: p.axes.length, bEls, bFill, aBar, aVal, dots, drift, sum, tested: new Set(), moved: new Set() };
+}
+function gpUpdate(p, ui) {
+  p.buttons.forEach((b, i) => {
+    const on = b.pressed || b.value > 0.5;
+    if (b.pressed || b.value > 0.05) ui.tested.add(i);
+    ui.bEls[i].classList.toggle('on', on);
+    ui.bEls[i].classList.toggle('tested', ui.tested.has(i));
+    ui.bFill[i].style.height = (b.value * 100) + '%';
+  });
+  const off = [];
+  p.axes.forEach((v, i) => {
+    const a = Math.abs(v);
+    ui.aBar[i].style.width = (a * 50) + '%';
+    ui.aBar[i].style.left = v < 0 ? (50 - a * 50) + '%' : '50%';
+    ui.aVal[i].textContent = v.toFixed(2);
+    if (a > 0.05) ui.moved.add(i);
+    if (a > 0.1) off.push(`A${i} ${v.toFixed(2)}`);
+  });
+  ui.dots.forEach(([dot, s]) => {
+    dot.style.left = (50 + p.axes[s] * 40) + '%';
+    dot.style.top = (50 + p.axes[s + 1] * 40) + '%';
+  });
+  ui.drift.textContent = off.length
+    ? `Off-center: ${off.join(', ')}. If you aren't touching the sticks, this may be stick drift.`
+    : 'All axes near center.';
+  ui.sum.textContent = `Buttons pressed: ${ui.tested.size}/${p.buttons.length} · Axes moved: ${ui.moved.size}/${p.axes.length}`;
+}
+function gpFrame() {
+  if (tab !== 'gamepad') { gpRaf = 0; return; }
+  if (!navigator.getGamepads) { $('gpNone').textContent = 'Gamepad API is not supported in this browser.'; gpRaf = 0; return; }
+  const list = [...navigator.getGamepads()].filter(Boolean);
+  $('gpNone').hidden = list.length > 0;
+  const seen = new Set();
+  list.forEach(p => {
+    seen.add(String(p.index));
+    let ui = gpUI[p.index];
+    if (!ui || ui.id !== p.id || ui.nb !== p.buttons.length || ui.na !== p.axes.length) {
+      if (ui) ui.wrap.remove();
+      ui = gpUI[p.index] = gpCreate(p);
+      $('gpList').appendChild(ui.wrap);
+    }
+    gpUpdate(p, ui);
+  });
+  Object.keys(gpUI).forEach(i => { if (!seen.has(i)) { gpUI[i].wrap.remove(); delete gpUI[i]; } });
+  gpRaf = requestAnimationFrame(gpFrame);
+}
+addEventListener('gamepadconnected', e => addLog('🎮 Controller connected: ' + e.gamepad.id));
+addEventListener('gamepaddisconnected', e => addLog('🎮 Controller disconnected: ' + e.gamepad.id));
+
+// ---------- tabs & controls ----------
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  ['live','report','typing','gamepad'].forEach(n => $('tab-' + n).hidden = n !== t);
+  $('kbd').hidden = t === 'gamepad';
+  if (t === 'report') renderReport();
+  if (t === 'typing') renderTT();
+  if (t === 'gamepad' && !gpRaf) gpRaf = requestAnimationFrame(gpFrame);
+}
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+$('size').onchange = e => { size = e.target.value; buildBoard(); };
+$('lang').onchange = e => { lang = e.target.value; buildBoard(); };
+$('mac').onchange = e => { mac = e.target.checked; buildBoard(); };
+$('auto').onchange = e => { auto = e.target.checked; };
+$('view').onchange = e => { view = e.target.value; updateLegend(); paintAll(); };
+$('chatMs').onchange = e => { chatterMs = Math.max(1, +e.target.value || 40); };
+$('sound').onchange = e => { soundOn = e.target.checked; };
+$('ttNew').onclick = newTest;
+$('ttLen').onchange = newTest;
+$('mobileX').onclick = () => $('mobile').hidden = true;
+
+// release focus from form fields so key presses are tested again
+addEventListener('change', e => { if (isField(e.target)) e.target.blur(); });
+addEventListener('click', e => {
+  const a = document.activeElement;
+  if (a && isField(a) && !e.target.closest('input,select,textarea')) a.blur();
+});
+
+$('reset').onclick = () => {
+  tested.clear(); held.clear(); stuck.clear();
+  Object.keys(stats).forEach(k => delete stats[k]);
+  chatterLog.length = 0; stuckLog.length = 0;
+  maxRoll = 0; lastDownAny = 0;
+  agg = { errMap:{}, timeMap:{}, countMap:{} };
+  ['k','c','kc','hold','gap'].forEach(id => $(id).textContent = '–');
+  $('log').innerHTML = '';
+  paintAll(); updateStats();
+};
+
+// ---------- start ----------
+if (matchMedia('(pointer: coarse)').matches) $('mobile').hidden = false;
+updateLegend();
+buildBoard();
+newTest();
+</script>
+</body>
+</html>
