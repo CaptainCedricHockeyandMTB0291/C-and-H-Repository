@@ -2,6 +2,10 @@
 
 A growing collection of useful codes, scripts, tools, experiments, and programming projects built for different purposes.
 
+Works best with Microsoft Surface Laptop Ultra, Microsoft Surface Pro, Samsung Book Go, and Windows PCs and Apple Devices.
+(Warning: Not Compatible with Androids that have cheap cpu) 
+Use at you own risk.
+
 Welcome to **Code Lab**.
 
 This repository is a collection of different programming projects covering multiple languages, categories, and everyday uses. From browser tools and productivity scripts to automation, utilities, experimental programs, and fun little projects.
