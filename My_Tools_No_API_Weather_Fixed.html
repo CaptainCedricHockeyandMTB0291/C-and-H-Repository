@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Tools</title>
+<style>
+  :root { --bg:#f4f4f0; --fg:#1a1a1a; --card:#fff; --line:#e3e3dc; --blue:#1565c0; --ok:#2e7d32; --bad:#d32f2f; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --card:#1e1e1e; --line:#333; --blue:#64b5f6; --ok:#66bb6a; --bad:#ef5350; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; }
+  .wrap { max-width:1000px; margin:0 auto; padding:20px; }
+  h1 { margin:0 0 4px; } h2 { margin:8px 0 14px; }
+  .sub, .muted { opacity:.7; font-size:13px; }
+  input, select, textarea, button { font:inherit; font-size:14px; }
+  input, select, textarea { padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); min-width:0; }
+  textarea { width:100%; min-height:120px; font-family:ui-monospace,monospace; }
+  button { padding:9px 14px; border:none; border-radius:8px; background:var(--blue); color:#fff; font-weight:600; cursor:pointer; }
+  button.alt { background:transparent; color:var(--fg); border:1px solid var(--line); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+  .chip { padding:6px 12px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--fg); font-weight:500; font-size:13px; }
+  .chip.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+  .tile { display:block; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .tile:hover { border-color:var(--blue); transform:translateY(-1px); }
+  .tile .i { font-size:26px; } .tile b { display:block; margin:4px 0 2px; } .tile span { font-size:12px; opacity:.7; }
+  a.back { color:var(--blue); text-decoration:none; font-weight:600; }
+  .big { font-size:30px; font-weight:700; }
+  .out { white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,monospace; font-size:13px; }
+  .b3 { display:grid; grid-template-columns:repeat(3,84px); gap:6px; margin:10px 0; }
+  .b4 { display:grid; grid-template-columns:repeat(4,72px); gap:6px; margin:10px 0; }
+  .cell { height:72px; font-size:28px; padding:0; background:var(--card); color:var(--fg); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; border-radius:10px; font-weight:700; }
+  .b3 .cell { height:84px; }
+  .pad { display:flex; align-items:center; justify-content:center; min-height:200px; border:2px dashed var(--line); border-radius:12px; font-size:20px; font-weight:600; cursor:pointer; user-select:none; text-align:center; padding:20px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { padding:5px 8px; text-align:left; border-bottom:1px solid var(--line); }
+  mark { background:rgba(255,213,0,.5); color:inherit; }
+  code { font-family:ui-monospace,monospace; }
+  .mine-wrap { max-width:100%; overflow-x:auto; padding-bottom:6px; }
+  .mine-board { display:grid; gap:3px; width:max-content; }
+  .mine-cell { width:32px; height:32px; min-width:32px; padding:0; border-radius:5px; font-size:15px; background:#8b9baa; color:#111; border:1px solid #64748b; }
+  .mine-cell.revealed { background:var(--card); border-color:var(--line); }
+  .mine-cell.flagged { background:#dbeafe; }
+  .mine-cell.n1 { color:#2563eb; } .mine-cell.n2 { color:#15803d; } .mine-cell.n3 { color:#dc2626; }
+  .connect-board { display:grid; grid-template-columns:repeat(7,minmax(34px,54px)); gap:6px; width:max-content; max-width:100%; padding:10px; border-radius:14px; background:#2563eb; }
+  .connect-cell { width:100%; aspect-ratio:1; min-width:0; padding:0; border-radius:50%; background:var(--card); border:2px solid rgba(0,0,0,.15); }
+  .connect-cell.p1 { background:#ef4444; } .connect-cell.p2 { background:#facc15; }
+  .connect-cell:disabled { cursor:default; opacity:1; }
+  .connect-drops { display:grid; grid-template-columns:repeat(7,minmax(34px,54px)); gap:6px; width:max-content; margin:8px 0; }
+  .connect-drops button { padding:7px 0; }
+  .hangman-letters { display:grid; grid-template-columns:repeat(7,minmax(34px,1fr)); gap:6px; max-width:430px; }
+  .hangman-letters button { padding:8px 2px; }
+  .hangman-word { font-size:clamp(22px,5vw,34px); letter-spacing:.22em; font-weight:700; overflow-wrap:anywhere; }
+  .keyboard-stage { padding:12px; border:2px solid var(--line); border-radius:12px; background:var(--bg); outline:none; }
+  .keyboard-stage:focus-visible { border-color:var(--blue); box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 22%,transparent); }
+  .keyboard-row { display:flex; gap:5px; margin:5px 0; }
+  .keyboard-key { flex:1 1 0; min-width:0; min-height:42px; padding:5px 3px; border:1px solid var(--line); border-radius:7px; background:var(--card); color:var(--fg); display:flex; justify-content:center; align-items:center; font-size:11px; user-select:none; text-align:center; }
+  .keyboard-key.wide { flex:1.7 1 0; } .keyboard-key.wider { flex:2.4 1 0; } .keyboard-key.space { flex:5 1 0; }
+  .keyboard-key.down { background:var(--blue); color:white; border-color:var(--blue); transform:translateY(1px); }
+  .keyboard-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin:12px 0; }
+  .keyboard-stat { padding:10px; border:1px solid var(--line); border-radius:9px; background:var(--card); }
+  .keyboard-stat b { display:block; font-size:22px; }
+  .keyboard-log { max-height:180px; overflow:auto; font:12px/1.6 ui-monospace,monospace; white-space:pre-wrap; }
+  @media (max-width:520px) { .wrap { padding:14px; } .b3 { grid-template-columns:repeat(3,minmax(0,1fr)); } .b4 { grid-template-columns:repeat(4,minmax(0,1fr)); } .cell { height:auto; aspect-ratio:1; } .b3 .cell { height:auto; } .mine-cell { width:29px; height:29px; min-width:29px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>My Tools</h1>
+  <div class="sub" id="sub"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+// ================= helpers =================
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('hub.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('hub.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const cleanups = [];
+const on = (t, e, f, o) => { t.addEventListener(e, f, o); cleanups.push(() => t.removeEventListener(e, f, o)); };
+const every = (f, ms) => { const i = setInterval(f, ms); cleanups.push(() => clearInterval(i)); return i; };
+const later = (f, ms) => {
+  let i;
+  const cleanup = () => clearTimeout(i);
+  i = setTimeout(() => { const at = cleanups.indexOf(cleanup); if (at !== -1) cleanups.splice(at, 1); f(); }, ms);
+  cleanups.push(cleanup);
+  return i;
+};
+const shuf = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+let AC;
+const ac = () => {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) throw new Error('Web Audio is not supported in this browser.');
+  AC = AC || new Ctx();
+  if (AC.state === 'suspended') AC.resume().catch(() => {});
+  return AC;
+};
+const beep = (f = 880, ms = 150) => { try { const c = ac(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime; o.frequency.value = f; g.gain.setValueAtTime(.2, t); g.gain.exponentialRampToValueAtTime(.001, t + ms / 1000); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + ms / 1000 + .02); } catch (e) {} };
+const copy = async t => {
+  const value = String(t ?? '');
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(value); return true; }
+    const box = document.createElement('textarea'); box.value = value; box.style.position = 'fixed'; box.style.opacity = '0';
+    document.body.appendChild(box); box.select(); const ok = document.execCommand('copy'); box.remove(); return ok;
+  } catch (e) { return false; }
+};
+
+// ================= GAMES =================
+function ttt(el) {
+  el.innerHTML = '<div class="b3" id="b"></div><p id="m" class="big"></p><button id="r">New game</button><p class="muted">You are X. The computer never loses.</p>';
+  let b, over;
+  const W = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const win = s => { for (const [a, c, d] of W) if (s[a] && s[a] === s[c] && s[a] === s[d]) return s[a]; return s.includes('') ? null : 'T'; };
+  const mm = (s, p) => { const w = win(s); if (w) return w === 'O' ? 1 : w === 'X' ? -1 : 0; let best = p === 'O' ? -2 : 2; for (let i = 0; i < 9; i++) if (!s[i]) { s[i] = p; const v = mm(s, p === 'O' ? 'X' : 'O'); s[i] = ''; best = p === 'O' ? Math.max(best, v) : Math.min(best, v); } return best; };
+  const draw = () => { $('#b', el).innerHTML = b.map((v, i) => `<button class="cell" data-i="${i}">${v}</button>`).join(''); const w = win(b); over = !!w; $('#m', el).textContent = w === 'T' ? 'Draw' : w ? (w === 'X' ? 'You win!' : 'Computer wins') : ''; };
+  const reset = () => { b = Array(9).fill(''); over = false; draw(); };
+  $('#b', el).onclick = e => {
+    const button = e.target.closest('button[data-i]'); if (!button) return; const i = button.dataset.i; if (i === undefined || over || b[i]) return;
+    b[i] = 'X';
+    if (!win(b)) { let best = -2, mv; for (let j = 0; j < 9; j++) if (!b[j]) { b[j] = 'O'; const v = mm(b, 'X'); b[j] = ''; if (v > best) { best = v; mv = j; } } b[mv] = 'O'; }
+    draw();
+  };
+  $('#r', el).onclick = reset; reset();
+}
+
+function memory(el) {
+  const E = ['🍎','🚌','🌲','⭐','🎲','🐟','🚀','🎧']; let cards, open, lock, moves, found, hideTimer = null;
+  el.innerHTML = '<div class="row"><span>Moves: <b id="mv">0</b></span><button id="r" class="alt">Restart</button></div><div class="b4" id="b"></div><p id="m" class="big"></p>';
+  const draw = () => { $('#b', el).innerHTML = cards.map((c, i) => `<button class="cell" data-i="${i}">${c.s ? c.e : '?'}</button>`).join(''); $('#mv', el).textContent = moves; $('#m', el).textContent = found === 8 ? `Done in ${moves} moves!` : ''; };
+  const start = () => { if (hideTimer !== null) { clearTimeout(hideTimer); hideTimer = null; } cards = shuf([...E, ...E]).map(e => ({ e, s: 0 })); open = []; moves = 0; found = 0; lock = false; draw(); };
+  $('#b', el).onclick = e => {
+    const button = e.target.closest('button[data-i]'); if (!button) return; const i = Number(button.dataset.i); if (!Number.isInteger(i) || !cards[i] || lock || cards[i].s) return;
+    cards[i].s = 1; open.push(i);
+    if (open.length === 2) {
+      moves++; const [a, b] = open;
+      if (cards[a].e === cards[b].e) { found++; open = []; }
+      else { lock = true; hideTimer = later(() => { hideTimer = null; if (!cards[a] || !cards[b]) return; cards[a].s = cards[b].s = 0; open = []; lock = false; draw(); }, 700); }
+    }
+    draw();
+  };
+  $('#r', el).onclick = start; start();
+}
+
+function whack(el) {
+  el.innerHTML = '<div class="row"><span>Score <b id="s">0</b></span><span>Time <b id="t">30</b></span><button id="go">Start</button></div><div class="b3" id="b"></div>';
+  let sc = 0, tl = 30, pos = -1, run = false, started = false;
+  const draw = () => { $('#b', el).innerHTML = Array.from({ length: 9 }, (_, i) => `<button class="cell" data-i="${i}">${i === pos ? '🐹' : ''}</button>`).join(''); };
+  $('#b', el).onclick = e => { const button = e.target.closest('button[data-i]'); if (!button) return; const i = Number(button.dataset.i); if (run && i === pos) { sc++; pos = -1; $('#s', el).textContent = sc; draw(); } };
+  $('#go', el).onclick = e => {
+    if (run) { run = false; pos = -1; e.target.textContent = 'Resume'; draw(); return; }
+    if (!started || tl <= 0) { sc = 0; tl = 30; started = true; $('#s', el).textContent = 0; $('#t', el).textContent = 30; }
+    run = true; e.target.textContent = 'Pause'; draw();
+  };
+  every(() => { if (!run) return; pos = Math.random() * 9 | 0; draw(); }, 700);
+  every(() => { if (!run) return; tl--; $('#t', el).textContent = tl; if (tl <= 0) { run = false; started = false; pos = -1; $('#go', el).textContent = 'Start'; draw(); } }, 1000);
+  draw();
+}
+
+function reaction(el) {
+  el.innerHTML = '<div id="pad" class="pad">Click to start</div><p id="m" class="big"></p>';
+  const pad = $('#pad', el); let st = 'idle', t0, to, best = store.get('rt', null);
+  const set = (t, bg) => { pad.textContent = t; pad.style.background = bg; pad.style.color = bg ? '#fff' : ''; };
+  const msg = () => $('#m', el).textContent = best ? `Best: ${best} ms` : ''; msg();
+  pad.onclick = () => {
+    if (st === 'idle') { st = 'wait'; set('Wait for green…', '#c62828'); to = later(() => { st = 'go'; set('CLICK!', '#2e7d32'); t0 = performance.now(); }, 1000 + Math.random() * 3000); }
+    else if (st === 'wait') { clearTimeout(to); st = 'idle'; set('Too soon! Click to retry', ''); }
+    else { const d = Math.round(performance.now() - t0); st = 'idle'; set(d + ' ms. Click to go again', ''); if (!best || d < best) { best = d; store.set('rt', d); } msg(); }
+  };
+}
+
+function g2048(el) {
+  el.innerHTML = '<div class="row"><span>Score <b id="s">0</b></span><button id="r" class="alt">New game</button></div><div class="b4" id="b"></div><p class="muted">Arrow keys or swipe</p><p id="m" class="big"></p>';
+  let g, sc, over = false; const N = 4;
+  const add = () => { const e = []; g.forEach((v, i) => v || e.push(i)); if (e.length) g[e[Math.random() * e.length | 0]] = Math.random() < .9 ? 2 : 4; };
+  const draw = () => { $('#b', el).innerHTML = g.map(v => `<div class="cell" style="${v ? `background:hsl(${40 - Math.log2(v) * 3},80%,${75 - Math.log2(v) * 3}%);color:#222` : ''}">${v || ''}</div>`).join(''); $('#s', el).textContent = sc; $('#m', el).textContent = over ? 'No moves left — game over!' : ''; };
+  const canMove = () => { if (g.some(v => !v)) return true; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const i = r * N + c; if (c < N - 1 && g[i] === g[i + 1]) return true; if (r < N - 1 && g[i] === g[i + N]) return true; } return false; };
+  const line = a => { a = a.filter(Boolean); for (let i = 0; i < a.length - 1; i++) if (a[i] === a[i + 1]) { a[i] *= 2; sc += a[i]; a.splice(i + 1, 1); } while (a.length < N) a.push(0); return a; };
+  const move = d => {
+    const o = g.join();
+    for (let k = 0; k < N; k++) {
+      const idx = [0, 1, 2, 3].map(j => d < 2 ? k * N + j : j * N + k);
+      let a = idx.map(i => g[i]); if (d % 2) a.reverse(); a = line(a); if (d % 2) a.reverse();
+      idx.forEach((i, j) => g[i] = a[j]);
+    }
+    if (g.join() !== o && !over) { add(); over = !canMove(); draw(); }
+  };
+  const start = () => { g = Array(16).fill(0); sc = 0; over = false; add(); add(); draw(); };
+  on(document, 'keydown', e => {
+    const active = document.activeElement, tag = active && active.tagName;
+    if ((tag && /^(INPUT|TEXTAREA|SELECT)$/.test(tag)) || (active && active.isContentEditable)) return;
+    const d = { ArrowLeft: 0, ArrowRight: 1, ArrowUp: 2, ArrowDown: 3 }[e.key];
+    if (d !== undefined && location.hash.replace(/^#\/?/, '') === 'g2048') { e.preventDefault(); move(d); }
+  });
+  let t0 = null;
+  on(el, 'touchstart', e => { if (e.touches && e.touches[0]) t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
+  on(el, 'touchend', e => { if (!t0 || !e.changedTouches || !e.changedTouches[0]) return; const t = e.changedTouches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y; t0 = null; if (Math.max(Math.abs(dx), Math.abs(dy)) < 25) return; move(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 0 : 1) : (dy < 0 ? 2 : 3)); }, { passive: true });
+  $('#r', el).onclick = start; start();
+}
+
+function rps(el) {
+  el.innerHTML = '<div class="row"><button data-m="0">✊ Rock</button><button data-m="1">✋ Paper</button><button data-m="2">✌️ Scissors</button></div><p id="m" class="big">Pick one</p><p id="s" class="muted"></p>';
+  const hist = [], tr = {}; let w = 0, l = 0, d = 0; const N = ['Rock', 'Paper', 'Scissors'];
+  el.onclick = e => {
+    const button = e.target.closest('button[data-m]'); if (!button) return; const me = Number(button.dataset.m);
+    const key = hist.slice(-2).join(), c = tr[key] || [0, 0, 0];
+    let pred = c.indexOf(Math.max(...c)); if (hist.length < 2 || Math.max(...c) === 0) pred = Math.random() * 3 | 0;
+    const ai = (pred + 1) % 3;
+    if (hist.length >= 2) { tr[key] = c; c[me]++; }
+    hist.push(me);
+    const r = (me - ai + 3) % 3; r === 0 ? d++ : r === 1 ? w++ : l++;
+    $('#m', el).textContent = `You ${N[me]} vs ${N[ai]}: ${r === 0 ? 'Draw' : r === 1 ? 'You win' : 'AI wins'}`;
+    $('#s', el).textContent = `Wins ${w} · Losses ${l} · Draws ${d} · It learns your habits, so mix it up!`;
+  };
+}
+
+function life(el) {
+  el.innerHTML = '<div class="row"><button id="p">Play</button><button id="st" class="alt">Step</button><button id="rn" class="alt">Random</button><button id="c" class="alt">Clear</button></div><canvas id="cv" width="480" height="480" style="width:100%;max-width:480px;border:1px solid var(--line);background:var(--card);touch-action:none"></canvas><p class="muted">Click or drag to draw cells.</p>';
+  const N = 48, S = 10, cv = $('#cv', el), x = cv.getContext('2d'); let g = Array.from({ length: N }, () => Array(N).fill(0)), play = false;
+  const draw = () => { x.clearRect(0, 0, 480, 480); x.fillStyle = '#2e7d32'; g.forEach((r, i) => r.forEach((v, j) => v && x.fillRect(j * S + 1, i * S + 1, S - 2, S - 2))); };
+  const step = () => { g = g.map((r, i) => r.map((v, j) => { let n = 0; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (a || b) n += g[(i + a + N) % N][(j + b + N) % N]; return n === 3 || (v && n === 2) ? 1 : 0; })); draw(); };
+  const paint = e => { const r = cv.getBoundingClientRect(), j = (e.clientX - r.left) / r.width * N | 0, i = (e.clientY - r.top) / r.height * N | 0; if (g[i] && g[i][j] !== undefined) { g[i][j] = e.type === 'pointerdown' ? +!g[i][j] : 1; draw(); } };
+  cv.onpointerdown = paint; cv.onpointermove = e => { if (e.buttons) paint(e); };
+  $('#p', el).onclick = e => { play = !play; e.target.textContent = play ? 'Pause' : 'Play'; };
+  $('#st', el).onclick = step;
+  $('#rn', el).onclick = () => { g = g.map(r => r.map(() => Math.random() < .25 ? 1 : 0)); draw(); };
+  $('#c', el).onclick = () => { g = g.map(r => r.map(() => 0)); draw(); };
+  every(() => { if (play) step(); }, 120); draw();
+}
+
+function dice(el) {
+  el.innerHTML = `<div class="row"><select id="n">${[1,2,3,4,5,6].map(i => `<option>${i}</option>`).join('')}</select><span>×  d</span><select id="s">${[4,6,8,10,12,20,100].map(i => `<option ${i == 6 ? 'selected' : ''}>${i}</option>`).join('')}</select><button id="r">Roll</button><button id="c" class="alt">Flip coin</button></div><div id="o" class="big">–</div><hr><div class="row"><input id="q" placeholder="Ask a yes/no question" style="flex:1"><button id="b">Ask the 8-ball</button></div><div id="a" class="big" style="font-size:22px"></div>`;
+  $('#r', el).onclick = () => { const n = +$('#n', el).value, s = +$('#s', el).value, r = Array.from({ length: n }, () => 1 + Math.random() * s | 0); $('#o', el).textContent = r.join(' + ') + (n > 1 ? ' = ' + r.reduce((a, b) => a + b) : ''); };
+  $('#c', el).onclick = () => $('#o', el).textContent = Math.random() < .5 ? 'Heads' : 'Tails';
+  const A = ['It is certain.', 'Without a doubt.', 'Yes, definitely.', 'Most likely.', 'Ask again later.', 'Cannot predict now.', "Don't count on it.", 'My reply is no.', 'Very doubtful.', 'Signs point to yes.'];
+  $('#b', el).onclick = () => $('#a', el).textContent = '🎱 ' + A[Math.random() * A.length | 0];
+}
+
+// ================= EXTRA GAMES =================
+function connect4(el) {
+  const ROWS = 6, COLS = 7;
+  let board, player, over;
+  el.innerHTML = '<div class="row"><b id="turn">Red goes first</b><button id="reset" class="alt">New game</button></div><div class="connect-drops" id="drops"></div><div class="connect-board" id="board" aria-label="Connect Four board"></div><p id="msg" class="muted">Two players, one keyboard or screen. Connect four to win.</p>';
+  const directions = [[0,1],[1,0],[1,1],[1,-1]];
+  const count = (r, c, dr, dc, p) => {
+    let total = 0, y = r + dr, x = c + dc;
+    while (y >= 0 && y < ROWS && x >= 0 && x < COLS && board[y][x] === p) { total++; y += dr; x += dc; }
+    return total;
+  };
+  const draw = () => {
+    $('#turn', el).textContent = over ? 'Game finished' : (player === 1 ? 'Red' : 'Yellow') + "'s turn";
+    $('#drops', el).innerHTML = Array.from({length: COLS}, (_, c) => `<button data-col="${c}" aria-label="Drop in column ${c + 1}" ${over ? 'disabled' : ''}>▼</button>`).join('');
+    $('#board', el).innerHTML = board.flatMap((row, r) => row.map((v, c) => `<button class="connect-cell ${v === 1 ? 'p1' : v === 2 ? 'p2' : ''}" data-col="${c}" aria-label="Row ${r + 1}, column ${c + 1}" disabled></button>`)).join('');
+  };
+  const reset = () => { board = Array.from({length: ROWS}, () => Array(COLS).fill(0)); player = 1; over = false; $('#msg', el).textContent = 'Two players, one keyboard or screen. Connect four to win.'; draw(); };
+  $('#drops', el).onclick = e => {
+    const button = e.target.closest('button[data-col]'); if (!button || over) return;
+    const c = Number(button.dataset.col); if (!Number.isInteger(c) || c < 0 || c >= COLS) return;
+    let r = ROWS - 1; while (r >= 0 && board[r][c]) r--; if (r < 0) return;
+    board[r][c] = player;
+    const won = directions.some(([dr, dc]) => 1 + count(r, c, dr, dc, player) + count(r, c, -dr, -dc, player) >= 4);
+    if (won) { over = true; $('#msg', el).textContent = (player === 1 ? 'Red' : 'Yellow') + ' wins!'; }
+    else if (board.every(row => row.every(Boolean))) { over = true; $('#msg', el).textContent = 'Draw — the board is full.'; }
+    else player = player === 1 ? 2 : 1;
+    draw();
+  };
+  $('#reset', el).onclick = reset; reset();
+}
+
+function minesweeper(el) {
+  const LEVELS = { Beginner: [9, 9, 10], Intermediate: [16, 16, 40], Expert: [16, 30, 99] };
+  let rows = 9, cols = 9, total = 10, cells = [], started = false, finished = false, flagMode = false, seconds = 0;
+  el.innerHTML = '<div class="row"><label>Difficulty <select id="level"><option>Beginner</option><option>Intermediate</option><option>Expert</option></select></label><button id="new" class="alt">New game</button><button id="flag" class="alt">Flag mode: off</button></div><div class="row"><b id="flags">Flags: 0 / 10</b><span id="time" class="muted">Time: 0s</span></div><div class="mine-wrap"><div id="board" class="mine-board"></div></div><p id="msg" class="muted">Reveal a square. Your first square and its neighbors are always safe.</p>';
+  every(() => { if (started && !finished) { seconds++; $('#time', el).textContent = `Time: ${seconds}s`; } }, 1000);
+  const neighbors = i => {
+    const r = Math.floor(i / cols), c = i % cols, out = [];
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (!dr && !dc) continue; const y = r + dr, x = c + dc;
+      if (y >= 0 && y < rows && x >= 0 && x < cols) out.push(y * cols + x);
+    }
+    return out;
+  };
+  const draw = () => {
+    const flags = cells.filter(c => c.flag).length;
+    $('#flags', el).textContent = `Flags: ${flags} / ${total}`;
+    $('#board', el).style.gridTemplateColumns = `repeat(${cols}, 32px)`;
+    $('#board', el).innerHTML = cells.map((c, i) => {
+      const text = c.flag ? '🚩' : !c.open ? '' : c.mine ? '💣' : c.count ? c.count : '';
+      return `<button class="mine-cell ${c.open ? 'revealed' : ''} ${c.flag ? 'flagged' : ''} ${c.open && c.count ? 'n' + c.count : ''}" data-i="${i}" aria-label="${c.open ? (c.mine ? 'Mine' : c.count ? c.count + ' neighboring mines' : 'Empty') : c.flag ? 'Flagged' : 'Hidden'}">${text}</button>`;
+    }).join('');
+  };
+  const makeBoard = () => {
+    [rows, cols, total] = LEVELS[$('#level', el).value];
+    cells = Array.from({length: rows * cols}, () => ({mine:false, count:0, open:false, flag:false}));
+    started = false; finished = false; flagMode = false; seconds = 0;
+    $('#flag', el).textContent = 'Flag mode: off'; $('#time', el).textContent = 'Time: 0s';
+    $('#msg', el).textContent = 'Reveal a square. Your first square and its neighbors are always safe.'; draw();
+  };
+  const plant = first => {
+    const safe = new Set([first, ...neighbors(first)]), available = cells.map((_, i) => i).filter(i => !safe.has(i));
+    for (const i of shuf(available).slice(0, total)) cells[i].mine = true;
+    cells.forEach((cell, i) => { if (!cell.mine) cell.count = neighbors(i).filter(j => cells[j].mine).length; });
+  };
+  const finish = won => {
+    finished = true;
+    if (won) { $('#msg', el).textContent = `You cleared the board in ${seconds}s!`; }
+    else { cells.forEach(c => { if (c.mine) c.open = true; }); $('#msg', el).textContent = 'Boom! You hit a mine. Press New game to retry.'; }
+    draw();
+  };
+  const reveal = start => {
+    const first = cells[start]; if (!first || first.open || first.flag || finished) return;
+    if (!started) { started = true; plant(start); }
+    if (cells[start].mine) { finish(false); return; }
+    const queue = [start], seen = new Set();
+    while (queue.length) {
+      const i = queue.pop(); if (seen.has(i)) continue; seen.add(i);
+      const c = cells[i]; if (!c || c.open || c.flag || c.mine) continue;
+      c.open = true;
+      if (c.count === 0) for (const n of neighbors(i)) if (!cells[n].open && !cells[n].flag && !cells[n].mine) queue.push(n);
+    }
+    if (cells.filter(c => !c.mine && c.open).length === cells.length - total) finish(true); else draw();
+  };
+  const toggleFlag = i => { const c = cells[i]; if (!c || c.open || finished) return; c.flag = !c.flag; draw(); };
+  $('#board', el).onclick = e => {
+    const b = e.target.closest('button[data-i]'); if (!b) return; const i = Number(b.dataset.i);
+    if (flagMode) toggleFlag(i); else reveal(i);
+  };
+  $('#board', el).oncontextmenu = e => { const b = e.target.closest('button[data-i]'); if (!b) return; e.preventDefault(); toggleFlag(Number(b.dataset.i)); };
+  $('#flag', el).onclick = () => { flagMode = !flagMode; $('#flag', el).textContent = `Flag mode: ${flagMode ? 'on' : 'off'}`; };
+  $('#new', el).onclick = makeBoard; $('#level', el).onchange = makeBoard;
+  makeBoard();
+}
+
+function hangman(el) {
+  const WORDS = ['JAVASCRIPT','KEYBOARD','GALAXY','PUZZLE','MOUNTAIN','COMPUTER','BROWSER','PIXEL','ROCKET','BICYCLE','ELEPHANT','THUNDER','GUITAR','VOLCANO','NOTEBOOK','DIAMOND'];
+  let word = '', used = new Set(), mistakes = 0, over = false;
+  el.innerHTML = '<div class="row"><b id="status">Guess the word</b><button id="again" class="alt">New word</button></div><div id="word" class="hangman-word" aria-live="polite"></div><p id="count" class="muted"></p><div id="letters" class="hangman-letters"></div><p class="muted">You have 6 incorrect guesses. Click a letter or use your keyboard.</p>';
+  const draw = () => {
+    $('#word', el).textContent = [...word].map(ch => used.has(ch) || over ? ch : '_').join(' ');
+    $('#count', el).textContent = `Wrong guesses: ${mistakes} / 6 · Used: ${[...used].join(' ') || 'none'}`;
+    $('#letters', el).innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => `<button class="alt" data-letter="${ch}" ${used.has(ch) || over ? 'disabled' : ''}>${ch}</button>`).join('');
+  };
+  const start = () => { word = WORDS[Math.random() * WORDS.length | 0]; used = new Set(); mistakes = 0; over = false; $('#status', el).textContent = 'Guess the word'; draw(); };
+  const guess = ch => {
+    if (over || !/^[A-Z]$/.test(ch) || used.has(ch)) return;
+    used.add(ch); if (!word.includes(ch)) mistakes++;
+    if ([...word].every(c => used.has(c))) { over = true; $('#status', el).textContent = 'You won!'; }
+    else if (mistakes >= 6) { over = true; $('#status', el).textContent = `Game over — the word was ${word}.`; }
+    draw();
+  };
+  $('#letters', el).onclick = e => { const b = e.target.closest('button[data-letter]'); if (b) guess(b.dataset.letter); };
+  $('#again', el).onclick = start;
+  on(document, 'keydown', e => { if (location.hash.replace(/^#\/?/, '') !== 'hangman') return; if (e.ctrlKey || e.altKey || e.metaKey || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return; if (/^[a-z]$/i.test(e.key)) guess(e.key.toUpperCase()); });
+  start();
+}
+
+// ================= PRODUCTIVITY =================
+function pomodoro(el) {
+  el.innerHTML = `<div class="big" id="t" style="font-size:56px">25:00</div><div class="row"><button id="go">Start</button><button id="rs" class="alt">Reset</button><select id="md"><option value="25">Focus 25 min</option><option value="5">Short break 5</option><option value="15">Long break 15</option></select></div><div class="card" id="n"></div>`;
+  let left = 25 * 60, run = false; const day = new Date().toDateString(); const savedPomo = store.get('pomo', {}); let done = savedPomo && typeof savedPomo === 'object' && !Array.isArray(savedPomo) ? (Number(savedPomo[day]) || 0) : 0;
+  cleanups.push(() => document.title = 'My Tools');
+  const show = () => { const m = String(left / 60 | 0).padStart(2, '0'), s = String(left % 60).padStart(2, '0'); $('#t', el).textContent = m + ':' + s; document.title = run ? `${m}:${s} · My Tools` : 'My Tools'; $('#n', el).innerHTML = `Focus sessions finished today: <b>${done}</b>`; };
+  const reset = () => { run = false; left = $('#md', el).value * 60; $('#go', el).textContent = 'Start'; show(); };
+  $('#md', el).onchange = reset; $('#rs', el).onclick = reset;
+  $('#go', el).onclick = e => { run = !run; e.target.textContent = run ? 'Pause' : 'Start'; show(); };
+  every(() => { if (!run) return; left--; if (left <= 0) { beep(880, 300); later(() => beep(1100, 500), 350); if ($('#md', el).value === '25') { done++; const saved = store.get('pomo', {}), s = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}; s[day] = done; store.set('pomo', s); } reset(); return; } show(); }, 1000);
+  show();
+}
+
+function todo(el) {
+  let L = store.get('todo', []); if (!Array.isArray(L)) L = []; L = L.filter(x => x && typeof x === 'object' && typeof x.t === 'string').map(x => ({t:x.t, d:!!x.d}));
+  el.innerHTML = '<form id="f" class="row"><input id="i" placeholder="Add a task" style="flex:1"><button>Add</button></form><div id="l"></div><button id="cl" class="alt">Clear completed</button>';
+  const draw = () => { $('#l', el).innerHTML = L.map((x, i) => `<div class="card" style="display:flex;gap:10px;align-items:center;padding:10px"><input type="checkbox" data-i="${i}" ${x.d ? 'checked' : ''}><span style="flex:1;${x.d ? 'text-decoration:line-through;opacity:.5' : ''}">${esc(x.t)}</span><button class="alt" data-x="${i}">✕</button></div>`).join('') || '<p class="muted">Nothing to do 🎉</p>'; store.set('todo', L); };
+  $('#f', el).onsubmit = e => { e.preventDefault(); const v = $('#i', el).value.trim(); if (v) { L.push({ t: v, d: 0 }); $('#i', el).value = ''; draw(); } };
+  $('#l', el).onclick = e => { const t = e.target; if (t.dataset.x !== undefined) { L.splice(+t.dataset.x, 1); draw(); } else if (t.dataset.i !== undefined) { L[+t.dataset.i].d = +t.checked; draw(); } };
+  $('#cl', el).onclick = () => { L = L.filter(x => !x.d); draw(); };
+  draw();
+}
+
+function md(s) {
+  const il = t => t.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\*([^*]+)\*/g, '<i>$1</i>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  let h = '', inl = false;
+  for (const raw of esc(s).split('\n')) {
+    let m;
+    if (m = raw.match(/^(#{1,3}) (.*)/)) { if (inl) { h += '</ul>'; inl = false; } h += `<h${m[1].length}>${il(m[2])}</h${m[1].length}>`; }
+    else if (m = raw.match(/^[-*] (.*)/)) { if (!inl) { h += '<ul>'; inl = true; } h += `<li>${il(m[1])}</li>`; }
+    else { if (inl) { h += '</ul>'; inl = false; } h += raw.trim() ? `<p>${il(raw)}</p>` : ''; }
+  }
+  return h + (inl ? '</ul>' : '');
+}
+function notes(el) {
+  el.innerHTML = '<div class="row" style="align-items:stretch"><div style="flex:1;min-width:260px"><textarea id="t" style="min-height:320px" placeholder="Write in Markdown: # Heading, **bold**, *italic*, - list, [link](https://…)"></textarea></div><div id="p" class="card" style="flex:1;min-width:260px;min-height:320px;margin:0;overflow:auto"></div></div><p class="muted">Saved automatically in this browser.</p>';
+  const t = $('#t', el); { const saved = store.get('note', ''); t.value = typeof saved === 'string' ? saved : ''; } const up = () => { $('#p', el).innerHTML = md(t.value); store.set('note', t.value); }; t.oninput = up; up();
+}
+
+function countdown(el) {
+  let L = store.get('cd', []); if (!Array.isArray(L)) L = []; L = L.filter(x => x && typeof x === 'object' && typeof x.d === 'string').map(x => ({n:String(x.n || 'Event'), d:x.d}));
+  el.innerHTML = '<form id="f" class="row"><input id="n" placeholder="Event" style="flex:1"><input id="d" type="date" required><button>Add</button></form><div id="l"></div>';
+  const draw = () => { $('#l', el).innerHTML = L.map((x, i) => { const d = Math.ceil((new Date(x.d + 'T00:00') - new Date().setHours(0, 0, 0, 0)) / 864e5); return `<div class="card" style="display:flex;align-items:center;gap:10px"><div style="flex:1"><b>${esc(x.n)}</b><div class="muted">${esc(x.d)}</div></div><div class="big">${d >= 0 ? d : '—'}</div><span class="muted">${d >= 0 ? 'days' : 'passed'}</span><button class="alt" data-x="${i}">✕</button></div>`; }).join('') || '<p class="muted">No events yet.</p>'; store.set('cd', L); };
+  $('#f', el).onsubmit = e => { e.preventDefault(); L.push({ n: $('#n', el).value.trim() || 'Event', d: $('#d', el).value }); L.sort((a, b) => a.d.localeCompare(b.d)); $('#n', el).value = ''; draw(); };
+  $('#l', el).onclick = e => { const button=e.target.closest('button[data-x]'); if (button) { const i=Number(button.dataset.x); if(Number.isInteger(i)&&i>=0&&i<L.length){L.splice(i,1);draw();} } };
+  draw();
+}
+
+function subs(el) {
+  let L = store.get('subs', []); if (!Array.isArray(L)) L = []; L = L.filter(x => x && typeof x === 'object' && Number.isFinite(Number(x.p)) && Number(x.p) >= 0 && Number.isFinite(Number(x.c)) && Number(x.c) > 0);
+  el.innerHTML = '<form id="f" class="row"><input id="n" placeholder="Service" style="flex:1"><input id="p" type="number" step="any" min="0" placeholder="Price" style="width:100px" required><select id="c"><option value="1">per month</option><option value="12">per year</option></select><button>Add</button></form><div id="l"></div><div class="card" id="t"></div>';
+  const draw = () => { const mo = L.reduce((a, x) => a + x.p / x.c, 0); $('#l', el).innerHTML = L.map((x, i) => `<div class="card" style="display:flex;gap:10px;align-items:center;padding:10px"><b style="flex:1">${esc(x.n)}</b><span>$${x.p.toFixed(2)}/${x.c == 1 ? 'mo' : 'yr'}</span><button class="alt" data-x="${i}">✕</button></div>`).join(''); $('#t', el).innerHTML = `<b>Monthly:</b> $${mo.toFixed(2)} · <b>Yearly:</b> $${(mo * 12).toFixed(2)}`; store.set('subs', L); };
+  $('#f', el).onsubmit = e => { e.preventDefault(); L.push({ n: $('#n', el).value.trim() || 'Subscription', p: +$('#p', el).value, c: +$('#c', el).value }); $('#n', el).value = ''; $('#p', el).value = ''; draw(); };
+  $('#l', el).onclick = e => { const button=e.target.closest('button[data-x]'); if (button) { const i=Number(button.dataset.x); if(Number.isInteger(i)&&i>=0&&i<L.length){L.splice(i,1);draw();} } };
+  draw();
+}
+
+function meetcost(el) {
+  el.innerHTML = '<div class="row"><label>People <input id="n" type="number" value="5" min="1" style="width:70px"></label><label>Avg hourly rate <input id="r" type="number" value="50" min="0" style="width:90px"></label><button id="go">Start</button><button id="rs" class="alt">Reset</button></div><div class="big" id="o" style="font-size:48px">$0.00</div><div class="muted" id="t">00:00:00</div>';
+  let acc = 0, run = false, t0 = 0;
+  every(() => { const ms = acc + (run ? Date.now() - t0 : 0); $('#o', el).textContent = '$' + (ms / 36e5 * $('#n', el).value * $('#r', el).value).toFixed(2); const totalSeconds=Math.floor(ms/1000), hours=Math.floor(totalSeconds/3600), minutes=Math.floor(totalSeconds%3600/60), seconds=totalSeconds%60; $('#t', el).textContent = [hours,minutes,seconds].map(v=>String(v).padStart(2,'0')).join(':'); }, 200);
+  $('#go', el).onclick = e => { if (run) { acc += Date.now() - t0; run = false; e.target.textContent = 'Start'; } else { t0 = Date.now(); run = true; e.target.textContent = 'Pause'; } };
+  $('#rs', el).onclick = () => { acc = 0; run = false; $('#go', el).textContent = 'Start'; };
+}
+
+// ================= CALCULATORS =================
+function tip(el) {
+  el.innerHTML = `<div class="card"><b>Tip & split</b><div class="row"><label>Bill <input id="b" type="number" step="any" value="50" style="width:90px"></label><label>Tip % <input id="p" type="number" value="18" style="width:70px"></label><label>People <input id="n" type="number" value="2" min="1" style="width:70px"></label></div><div id="o" class="big" style="font-size:20px"></div></div>
+  <div class="card"><b>Loan payment</b><div class="row"><label>Amount <input id="a" type="number" value="10000" style="width:100px"></label><label>APR % <input id="i" type="number" step="any" value="6" style="width:70px"></label><label>Years <input id="y" type="number" step="any" value="5" style="width:70px"></label></div><div id="l" class="big" style="font-size:22px"></div><div id="l2" class="muted"></div></div>`;
+  const calc = () => {
+    const v = id => Number($('#' + id, el).value), bill = v('b'), pct = v('p'), people = v('n');
+    if (![bill, pct, people].every(Number.isFinite) || bill < 0 || pct < 0 || people < 1 || !Number.isInteger(people)) { $('#o', el).textContent = 'Enter a non-negative bill and at least 1 person.'; }
+    else { const t = bill * pct / 100; $('#o', el).textContent = `Tip $${t.toFixed(2)} · Total $${(bill + t).toFixed(2)} · Each $${((bill + t) / people).toFixed(2)}`; }
+    const amount = v('a'), apr = v('i'), years = v('y'), r = apr / 1200, n = years * 12;
+    if (![amount, apr, years].every(Number.isFinite) || amount < 0 || apr < 0 || n < 1 || n > 1200) { $('#l', el).textContent = 'Enter a valid amount, APR, and term (1 month to 100 years).'; $('#l2', el).textContent = ''; return; }
+    const m = r ? amount * r / (1 - Math.pow(1 + r, -n)) : amount / n;
+    $('#l', el).textContent = isFinite(m) ? `$${m.toFixed(2)} / month` : '–';
+    $('#l2', el).textContent = isFinite(m) ? `Total paid $${(m * n).toFixed(2)} · Interest $${(m * n - amount).toFixed(2)}` : '';
+  };
+  el.oninput = calc; calc();
+}
+
+function units(el) {
+  const U = { Length: { m: 1, km: 1000, cm: .01, mm: .001, mi: 1609.344, yd: .9144, ft: .3048, in: .0254 }, Weight: { kg: 1, g: .001, lb: .45359237, oz: .028349523 }, Volume: { L: 1, mL: .001, cup: .2365882, tbsp: .0147868, tsp: .00492892, gal: 3.785412, 'fl oz': .0295735 }, Speed: { 'm/s': 1, 'km/h': .277778, mph: .44704, knot: .514444 } };
+  el.innerHTML = `<div class="row"><select id="c">${Object.keys(U).map(k => `<option>${k}</option>`).join('')}</select></div><div class="row"><input id="v" type="number" value="1" step="any" style="width:120px"><select id="a"></select><span>→</span><select id="b"></select></div><div id="o" class="big"></div><div class="card"><b>Temperature</b><div class="row"><input id="tc" type="number" step="any" placeholder="°C" style="width:100px"> °C ⇄ <input id="tf" type="number" step="any" placeholder="°F" style="width:100px"> °F</div></div>`;
+  const run = () => { const u = U[$('#c', el).value], a = $('#a', el).value, b = $('#b', el).value; if (u[a] === undefined || u[b] === undefined) return; $('#o', el).textContent = `${$('#v', el).value} ${a} = ${+(($('#v', el).value) * u[a] / u[b]).toPrecision(7)} ${b}`; };
+  const fill = () => { const k = Object.keys(U[$('#c', el).value]); $('#a', el).innerHTML = $('#b', el).innerHTML = k.map(x => `<option>${x}</option>`).join(''); $('#b', el).selectedIndex = Math.min(1, k.length - 1); run(); };
+  el.onchange = e => { if (e.target.id === 'c') fill(); else run(); };
+  el.oninput = e => {
+    if (e.target.id === 'tc') $('#tf', el).value = e.target.value === '' ? '' : (e.target.value * 9 / 5 + 32).toFixed(2);
+    else if (e.target.id === 'tf') $('#tc', el).value = e.target.value === '' ? '' : ((e.target.value - 32) * 5 / 9).toFixed(2);
+    else run();
+  };
+  fill();
+}
+
+function sleep(el) {
+  el.innerHTML = `<div class="card"><b>I need to wake up at</b><div class="row"><input id="w" type="time" value="07:00"><button id="bw">Find bedtimes</button></div></div><div class="card"><b>I'm going to bed at</b><div class="row"><input id="s" type="time"><button id="bs">Find wake times</button><button id="nw" class="alt">Now</button></div></div><div id="o" class="big" style="font-size:20px;line-height:1.7"></div><p class="muted">Sleep cycles are about 90 minutes, plus roughly 15 minutes to fall asleep.</p>`;
+  const fmt = m => { m = (m % 1440 + 1440) % 1440; const h = m / 60 | 0; return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  const mins = v => { const [a, b] = v.split(':').map(Number); return a * 60 + b; };
+  $('#bw', el).onclick = () => { const w = mins($('#w', el).value || '07:00'); $('#o', el).innerHTML = [6, 5, 4].map(c => `${fmt(w - c * 90 - 15)} <span class="muted">(${c} cycles, ${c * 1.5} h)</span>`).join('<br>'); };
+  $('#bs', el).onclick = () => { const s = mins($('#s', el).value || '23:00') + 15; $('#o', el).innerHTML = [4, 5, 6].map(c => `${fmt(s + c * 90)} <span class="muted">(${c} cycles, ${c * 1.5} h)</span>`).join('<br>'); };
+  $('#nw', el).onclick = () => { const d = new Date(); $('#s', el).value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+}
+
+function clocks(el) {
+  const all = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : ['UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+  let Z = store.get('wc', ['UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo']); if (!Array.isArray(Z)) Z = ['UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo']; Z = Z.filter(z => typeof z === 'string').slice(0, 40);
+  el.innerHTML = `<div class="row"><input id="z" list="zl" placeholder="Add a time zone (e.g. Europe/Paris)" style="flex:1;min-width:220px"><datalist id="zl">${all.map(z => `<option value="${esc(z)}">`).join('')}</datalist><button id="a">Add</button></div><div id="l"></div>`;
+  const row = (name, tz, i) => { const now = new Date(); let t, d; try { const o = tz ? { timeZone: tz } : {}; t = now.toLocaleTimeString([], { ...o, hour: '2-digit', minute: '2-digit' }); d = now.toLocaleDateString([], { ...o, weekday: 'short', month: 'short', day: 'numeric' }); } catch (e) { return ''; } return `<div class="card" style="display:flex;align-items:center;gap:10px"><b style="flex:1">${esc(name)}<div class="muted">${d}</div></b><div class="big">${t}</div>${i === undefined ? '' : `<button class="alt" data-x="${i}">✕</button>`}</div>`; };
+  const draw = () => { $('#l', el).innerHTML = row('Your local time', '') + Z.map((z, i) => row(z.replace(/_/g, ' '), z, i)).join(''); };
+  $('#a', el).onclick = () => { const z = $('#z', el).value.trim(); try { new Date().toLocaleTimeString([], { timeZone: z }); if (!Z.includes(z)) Z.push(z); store.set('wc', Z); $('#z', el).value = ''; draw(); } catch (e) { $('#z', el).value = ''; $('#z', el).placeholder = 'Unknown zone, try Europe/Paris'; } };
+  $('#l', el).onclick = e => { const button=e.target.closest('button[data-x]'); if (button) { const i=Number(button.dataset.x); if(Number.isInteger(i)&&i>=0&&i<Z.length){Z.splice(i,1);store.set('wc',Z);draw();} } };
+  every(draw, 5000); draw();
+}
+
+function picker(el) {
+  el.innerHTML = '<textarea id="t" placeholder="One name per line"></textarea><div class="row"><button id="p">Pick one</button><label>Teams <input id="n" type="number" value="2" min="2" style="width:70px"></label><button id="s" class="alt">Split into teams</button></div><div id="o" class="big" style="font-size:22px"></div>';
+  const names = () => $('#t', el).value.split('\n').map(s => s.trim()).filter(Boolean);
+  $('#p', el).onclick = () => { const a = names(); $('#o', el).textContent = a.length ? '🎉 ' + a[Math.random() * a.length | 0] : 'Add some names first'; };
+  $('#s', el).onclick = () => { const a = shuf(names()), n = Math.max(2, +$('#n', el).value || 2), T = Array.from({ length: n }, () => []); a.forEach((x, i) => T[i % n].push(x)); $('#o', el).innerHTML = T.map((t, i) => `<div class="card"><b>Team ${i + 1}</b><div style="font-size:16px;font-weight:400">${t.map(esc).join(', ') || '–'}</div></div>`).join(''); };
+}
+
+function santa(el) {
+  el.innerHTML = '<textarea id="t" placeholder="Names, one per line"></textarea><p class="muted">Pairs that must not match (couples, etc.), one per line like Alice-Bob</p><textarea id="x" style="min-height:60px"></textarea><div class="row"><button id="g">Draw names</button></div><div id="o"></div>';
+  let M = null;
+  const show = () => { $('#o', el).innerHTML = '<p class="muted">Pass the device around. Tap your name to see who you got, then tap Hide.</p><div class="row">' + M.map((m, i) => `<button class="alt" data-i="${i}">${esc(m[0])}</button>`).join('') + '</div><div id="r" class="big" style="font-size:22px"></div>'; };
+  $('#g', el).onclick = () => {
+    const N = $('#t', el).value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (new Set(N).size !== N.length || N.length < 3) { $('#o', el).textContent = 'Need at least 3 unique names.'; return; }
+    const bad = new Set();
+    $('#x', el).value.split('\n').forEach(l => { const parts = l.split('-').map(s => s.trim()); const a = parts[0], b = parts.slice(1).join('-').trim(); if (a && b) { bad.add(a + '|' + b); bad.add(b + '|' + a); } });
+    const order = shuf(N), result = Array(N.length).fill(null);
+    const choices = order.map(giver => shuf(N.filter(receiver => receiver !== giver && !bad.has(giver + '|' + receiver))));
+    const matchedReceiver = new Map();
+    const findMatch = (giverIndex, seen) => {
+      for (const receiver of choices[giverIndex]) {
+        if (seen.has(receiver)) continue;
+        seen.add(receiver);
+        const previous = matchedReceiver.get(receiver);
+        if (previous === undefined || findMatch(previous, seen)) { matchedReceiver.set(receiver, giverIndex); return true; }
+      }
+      return false;
+    };
+    let valid = true;
+    for (const i of shuf(order.map((_, i) => i))) if (!findMatch(i, new Set())) { valid = false; break; }
+    if (valid) { for (const [receiver, giverIndex] of matchedReceiver) result[giverIndex] = receiver; M = order.map((g, i) => [g, result[i]]); show(); }
+    else { M = null; $('#o', el).textContent = 'No valid draw exists with those restrictions.'; }
+  };
+  $('#o', el).onclick = e => {
+    if (e.target.closest('#h')) { const result=$('#r',el); if(result) result.innerHTML=''; return; }
+    const button=e.target.closest('button[data-i]');
+    if (button && M) { const i=Number(button.dataset.i); if(M[i]) $('#r', el).innerHTML = `${esc(M[i][0])}, you got: <b>${esc(M[i][1])}</b> <button id="h" class="alt">Hide</button>`; }
+  };
+}
+
+// ================= WELLNESS =================
+function breathe(el) {
+  const P = { 'Box 4-4-4-4': [['Inhale', 4], ['Hold', 4], ['Exhale', 4], ['Hold', 4]], '4-7-8': [['Inhale', 4], ['Hold', 7], ['Exhale', 8]], 'Calm 5-5': [['Inhale', 5], ['Exhale', 5]] };
+  el.innerHTML = `<div class="row"><select id="p">${Object.keys(P).map(k => `<option>${k}</option>`).join('')}</select><button id="go">Start</button></div><div style="display:flex;justify-content:center;padding:70px 0"><div id="c" style="width:100px;height:100px;border-radius:50%;background:var(--blue);opacity:.85;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;text-align:center;transition:transform 1s linear"></div></div>`;
+  let on = false, i = 0, t = 0; const c = $('#c', el);
+  $('#p', el).onchange = () => { i = 0; t = 0; };
+  $('#go', el).onclick = e => { on = !on; e.target.textContent = on ? 'Stop' : 'Start'; i = 0; t = 0; if (!on) { c.textContent = ''; c.style.transform = 'scale(1)'; } };
+  every(() => {
+    if (!on) return;
+    const seq = P[$('#p', el).value], [n, d] = seq[i];
+    if (t === 0) { c.style.transitionDuration = d + 's'; if (n === 'Inhale') c.style.transform = 'scale(2.2)'; if (n === 'Exhale') c.style.transform = 'scale(1)'; }
+    c.textContent = n + ' ' + (d - t); t++;
+    if (t >= d) { t = 0; i = (i + 1) % seq.length; }
+  }, 1000);
+}
+
+// ================= DEV TOOLS =================
+function json(el) {
+  el.innerHTML = '<textarea id="i" placeholder="Paste JSON"></textarea><div class="row"><button id="f">Format</button><button id="m" class="alt">Minify</button><button id="c" class="alt">Copy</button></div><div id="o" class="out"></div>';
+  const run = sp => { try { const s = JSON.stringify(JSON.parse($('#i', el).value), null, sp); $('#i', el).value = s; $('#o', el).textContent = '✓ Valid JSON'; } catch (e) { $('#o', el).textContent = '✗ ' + e.message; } };
+  $('#f', el).onclick = () => run(2); $('#m', el).onclick = () => run(0); $('#c', el).onclick = () => copy($('#i', el).value);
+}
+
+function b64(el) {
+  el.innerHTML = '<textarea id="i" placeholder="Text, Base64, or a JWT"></textarea><div class="row"><button id="e">Encode Base64</button><button id="d" class="alt">Decode Base64</button><button id="j" class="alt">Decode JWT</button></div><div id="o" class="out"></div>';
+  const enc = s => { let b = ''; new TextEncoder().encode(s).forEach(c => b += String.fromCharCode(c)); return btoa(b); };
+  const dec = s => { s = s.trim().replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))); };
+  const v = () => $('#i', el).value, o = t => $('#o', el).textContent = t;
+  $('#e', el).onclick = () => o(enc(v()));
+  $('#d', el).onclick = () => { try { o(dec(v())); } catch (e) { o('✗ Not valid Base64'); } };
+  $('#j', el).onclick = () => {
+    try {
+      const p = v().trim().split('.'), H = JSON.parse(dec(p[0])), P = JSON.parse(dec(p[1]));
+      let s = 'HEADER\n' + JSON.stringify(H, null, 2) + '\n\nPAYLOAD\n' + JSON.stringify(P, null, 2);
+      if (P.exp) s += `\n\nExpires: ${new Date(P.exp * 1000).toString()} (${P.exp * 1000 < Date.now() ? 'EXPIRED' : 'still valid'})`;
+      o(s + '\n\nThe signature is not verified here.');
+    } catch (e) { o('✗ Not a valid JWT'); }
+  };
+}
+
+function ts(el) {
+  el.innerHTML = '<div class="row"><input id="i" placeholder="Unix time, ISO date, or any date" style="flex:1"><button id="n" class="alt">Now</button></div><div id="o" class="out"></div>';
+  const rel = d => { const s = Math.round((d - Date.now()) / 1000), a = Math.abs(s), u = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60], ['second', 1]].find(x => a >= x[1]) || ['second', 1], n = Math.floor(a / u[1]); return s >= 0 ? `in ${n} ${u[0]}(s)` : `${n} ${u[0]}(s) ago`; };
+  const run = () => { const v = $('#i', el).value.trim(); if (!v) { $('#o', el).textContent = ''; return; } const d = /^-?\d+(\.\d+)?$/.test(v) ? new Date(+v * (Math.abs(+v) < 1e11 ? 1000 : 1)) : new Date(v); if (isNaN(d) || !isFinite(+d)) { $('#o', el).textContent = 'Could not read that date'; return; } let iso; try { iso = d.toISOString(); } catch (e) { $('#o', el).textContent = 'That date is outside the supported range.'; return; } $('#o', el).textContent = `Unix (s):  ${Math.floor(d / 1000)}\nUnix (ms): ${+d}\nISO (UTC): ${iso}\nLocal:     ${d.toString()}\nRelative:  ${rel(d)}`; };
+  $('#i', el).oninput = run; $('#n', el).onclick = () => { $('#i', el).value = Date.now(); run(); };
+}
+
+function hash(el) {
+  el.innerHTML = '<textarea id="i" placeholder="Text to hash (computed locally)"></textarea><div id="o" class="out card"></div><div class="row"><button id="u">New UUID</button><span id="uu" class="out"></span></div>';
+  const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  const sha256Fallback = bytes => {
+    const primes=[];
+    for(let n=2;primes.length<64;n++){let prime=true;for(let d=2;d*d<=n;d++)if(n%d===0){prime=false;break;}if(prime)primes.push(n);}
+    const initial=primes.slice(0,8).map(n=>(Math.sqrt(n)%1*0x100000000)>>>0);
+    const K=primes.map(n=>(Math.cbrt(n)%1*0x100000000)>>>0);
+    const bitLength=bytes.length*8, paddedLength=Math.ceil((bytes.length+9)/64)*64, data=new Uint8Array(paddedLength);
+    data.set(bytes); data[bytes.length]=0x80;
+    const hi=Math.floor(bitLength/0x100000000), lo=bitLength>>>0, end=paddedLength-8;
+    data[end]=(hi>>>24)&255; data[end+1]=(hi>>>16)&255; data[end+2]=(hi>>>8)&255; data[end+3]=hi&255;
+    data[end+4]=(lo>>>24)&255; data[end+5]=(lo>>>16)&255; data[end+6]=(lo>>>8)&255; data[end+7]=lo&255;
+    const rotr=(x,n)=>(x>>>n)|(x<<(32-n)), H=initial.slice(), w=new Uint32Array(64);
+    for(let offset=0;offset<data.length;offset+=64){
+      for(let i=0;i<16;i++){const j=offset+i*4;w[i]=((data[j]<<24)|(data[j+1]<<16)|(data[j+2]<<8)|data[j+3])>>>0;}
+      for(let i=16;i<64;i++){const x=w[i-15],y=w[i-2],s0=rotr(x,7)^rotr(x,18)^(x>>>3),s1=rotr(y,17)^rotr(y,19)^(y>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0;}
+      let [a,b,c,d,e,f,g,h]=H;
+      for(let i=0;i<64;i++){
+        const S1=rotr(e,6)^rotr(e,11)^rotr(e,25), ch=(e&f)^(~e&g), t1=(h+S1+ch+K[i]+w[i])>>>0;
+        const S0=rotr(a,2)^rotr(a,13)^rotr(a,22), maj=(a&b)^(a&c)^(b&c), t2=(S0+maj)>>>0;
+        h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;
+      }
+      H[0]=(H[0]+a)>>>0;H[1]=(H[1]+b)>>>0;H[2]=(H[2]+c)>>>0;H[3]=(H[3]+d)>>>0;H[4]=(H[4]+e)>>>0;H[5]=(H[5]+f)>>>0;H[6]=(H[6]+g)>>>0;H[7]=(H[7]+h)>>>0;
+    }
+    const out=new Uint8Array(32); H.forEach((v,i)=>{out[i*4]=v>>>24;out[i*4+1]=v>>>16&255;out[i*4+2]=v>>>8&255;out[i*4+3]=v&255;}); return out;
+  };
+  let revision=0;
+  const run = async () => {
+    const current=++revision, d=new TextEncoder().encode($('#i',el).value); let s='';
+    try {
+      if(crypto.subtle&&crypto.subtle.digest){for(const a of ['SHA-1','SHA-256','SHA-384','SHA-512'])s+=a.padEnd(8)+hex(await crypto.subtle.digest(a,d))+'\n';}
+      else s='SHA-256  '+[...sha256Fallback(d)].map(x=>x.toString(16).padStart(2,'0')).join('')+' (local fallback)\nSHA-1, SHA-384 and SHA-512 require HTTPS or a local file with Web Crypto enabled.';
+    } catch(e) { s='SHA-256  '+[...sha256Fallback(d)].map(x=>x.toString(16).padStart(2,'0')).join('')+' (local fallback)\nOther hash algorithms require Web Crypto in a secure context.'; }
+    if(current===revision) $('#o',el).textContent=s;
+  };
+  $('#i', el).oninput = run; run();
+  $('#u', el).onclick = () => {
+    try {
+      if(crypto.randomUUID) $('#uu',el).textContent=crypto.randomUUID();
+      else if(crypto.getRandomValues){const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');$('#uu',el).textContent=`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
+      else $('#uu',el).textContent='Secure random generation unavailable';
+    } catch(e){$('#uu',el).textContent='Secure random generation unavailable';}
+  };
+}
+
+function regex(el) {
+  el.innerHTML = '<div class="row"><input id="p" placeholder="Pattern, e.g. \\d+-\\w+" style="flex:1"><input id="f" value="g" style="width:70px" title="Flags"></div><textarea id="t" placeholder="Test text"></textarea><div id="o" class="out"></div>';
+  const run = () => {
+    const o = $('#o', el);
+    try {
+      let f = $('#f', el).value; if (!f.includes('g')) f += 'g';
+      const re = new RegExp($('#p', el).value, f), t = $('#t', el).value; let h = '', last = 0, n = 0; const rows = [];
+      for (const m of t.matchAll(re)) { if (m[0] === '') continue; h += esc(t.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>'; last = m.index + m[0].length; n++; rows.push(`#${n} @${m.index}: "${m[0]}"` + (m.length > 1 ? ' groups: ' + m.slice(1).map(g => JSON.stringify(g)).join(', ') : '')); }
+      h += esc(t.slice(last));
+      o.innerHTML = `<div class="card" style="white-space:pre-wrap">${h}</div>` + esc(n + ' match(es)\n' + rows.join('\n'));
+    } catch (e) { o.textContent = '✗ ' + e.message; }
+  };
+  el.oninput = run;
+}
+
+function pass(el) {
+  el.innerHTML = '<div class="row"><label>Length <input id="l" type="range" min="8" max="64" value="20"></label><b id="ln">20</b></div><div class="row"><label><input type="checkbox" id="lo" checked> a-z</label><label><input type="checkbox" id="u" checked> A-Z</label><label><input type="checkbox" id="d" checked> 0-9</label><label><input type="checkbox" id="s" checked> Symbols</label></div><div class="row"><button id="g">Generate</button><button id="c" class="alt">Copy</button></div><div class="card"><div id="o" class="out" style="font-size:18px"></div><div id="e" class="muted"></div></div>';
+  const gen = () => {
+    const sets = []; if ($('#lo', el).checked) sets.push('abcdefghijklmnopqrstuvwxyz'); if ($('#u', el).checked) sets.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ'); if ($('#d', el).checked) sets.push('0123456789'); if ($('#s', el).checked) sets.push('!@#$%^&*()-_=+[]{};:,.?');
+    const out = $('#o', el), info = $('#e', el), n = +$('#l', el).value; $('#ln', el).textContent = n;
+    if (!sets.length) { out.textContent = ''; info.textContent = 'Select at least one character set.'; return; }
+    if (!window.crypto || !crypto.getRandomValues) { out.textContent = ''; info.textContent = 'Secure random generation is unavailable in this browser context.'; return; }
+    const cs = sets.join('');
+    const randomIndex = max => { const limit = Math.floor(0x100000000 / max) * max, buf = new Uint32Array(1); let v; do { crypto.getRandomValues(buf); v = buf[0]; } while (v >= limit); return v % max; };
+    const chars = sets.map(set => set[randomIndex(set.length)]);
+    while (chars.length < n) chars.push(cs[randomIndex(cs.length)]);
+    for (let i = chars.length - 1; i > 0; i--) { const j = randomIndex(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+    out.textContent = chars.join('');
+    const bits = Math.round(n * Math.log2(cs.length)); info.textContent = `~${bits} bits of entropy · ${bits < 50 ? 'weak' : bits < 80 ? 'okay' : bits < 110 ? 'strong' : 'very strong'}`;
+  };
+  $('#l', el).oninput = gen; ['lo', 'u', 'd', 's'].forEach(id => $('#' + id, el).onchange = gen); $('#g', el).onclick = gen; $('#c', el).onclick = () => copy($('#o', el).textContent); gen();
+}
+
+function color(el) {
+  el.innerHTML = '<div class="row"><label>Text <input type="color" id="a" value="#1a1a1a"></label><label>Background <input type="color" id="b" value="#ffffff"></label></div><div id="pv" class="card">Sample text looks like this</div><div id="r" class="big" style="font-size:18px"></div><hr><div class="row"><label>Base color <input type="color" id="c" value="#1565c0"></label></div><div id="pal" class="row"></div>';
+  const lum = h => { const v = [1, 3, 5].map(i => { const c = parseInt(h.substr(i, 2), 16) / 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
+  const toHsl = h => { const r = parseInt(h.substr(1, 2), 16) / 255, g = parseInt(h.substr(3, 2), 16) / 255, b = parseInt(h.substr(5, 2), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let hh = 0, s = 0; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh *= 60; } return [hh, s * 100, l * 100]; };
+  const toHex = (h, s, l) => { h = ((h % 360) + 360) % 360; s /= 100; l /= 100; const f = n => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l), c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(255 * c).toString(16).padStart(2, '0'); }; return '#' + f(0) + f(8) + f(4); };
+  const run = () => {
+    const A = $('#a', el).value, B = $('#b', el).value; $('#pv', el).style.cssText = `font-size:18px;color:${A};background:${B}`;
+    const l1 = lum(A), l2 = lum(B), r = (Math.max(l1, l2) + .05) / (Math.min(l1, l2) + .05);
+    $('#r', el).textContent = `Contrast ${r.toFixed(2)}:1 · normal text ${r >= 7 ? 'AAA ✓' : r >= 4.5 ? 'AA ✓' : 'fails ✗'} · large text ${r >= 4.5 ? 'AAA ✓' : r >= 3 ? 'AA ✓' : 'fails ✗'}`;
+    const [h, s, l] = toHsl($('#c', el).value);
+    const P = [['Base', h, s, l], ['Complement', h + 180, s, l], ['Analogous −30', h - 30, s, l], ['Analogous +30', h + 30, s, l], ['Triad +120', h + 120, s, l], ['Triad −120', h - 120, s, l], ['Lighter', h, s, Math.min(95, l + 20)], ['Darker', h, s, Math.max(5, l - 20)]];
+    $('#pal', el).innerHTML = P.map(([n, H, S, L]) => { const hx = toHex(H, S, L); return `<div style="width:110px;text-align:center"><div style="height:60px;border-radius:8px;background:${hx};border:1px solid var(--line)"></div><div class="muted">${n}</div><code>${hx}</code></div>`; }).join('');
+  };
+  el.oninput = run; run();
+}
+
+// ================= WRITING =================
+function words(el) {
+  el.innerHTML = '<textarea id="t" placeholder="Paste or type text"></textarea><div id="o" class="card"></div>';
+  const syl = w => Math.max(1, (w.toLowerCase().replace(/e$/, '').match(/[aeiouy]+/g) || []).length);
+  const run = () => {
+    const t = $('#t', el).value, W = t.match(/[\p{L}\p{N}'’-]+/gu) || [], S = (t.match(/[^.!?]+[.!?]*/g) || []).filter(s => s.trim()).length, sy = W.reduce((a, w) => a + syl(w), 0);
+    const gr = W.length && S ? .39 * W.length / S + 11.8 * sy / W.length - 15.59 : 0, f = {};
+    W.forEach(w => { w = w.toLowerCase(); if (w.length > 3) f[w] = (f[w] || 0) + 1; });
+    const top = Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    $('#o', el).innerHTML = `<b>${W.length}</b> words · <b>${t.length}</b> characters · <b>${S}</b> sentences · about <b>${Math.ceil(W.length / 230)}</b> min read<br>Reading grade level: <b>${Math.max(0, gr).toFixed(1)}</b><br><span class="muted">Common words: ${top.map(([w, n]) => `${esc(w)} (${n})`).join(', ') || '–'}</span>`;
+  };
+  $('#t', el).oninput = run; run();
+}
+
+function speed(el) {
+  el.innerHTML = '<textarea id="t" placeholder="Paste text to speed-read"></textarea><div class="row"><label>Words/min <input id="w" type="range" min="100" max="1000" step="25" value="300"></label><b id="wv">300</b><button id="go">Start</button></div><div id="d" class="big" style="text-align:center;font-size:44px;padding:40px 0;min-height:130px"></div><div id="p" class="muted"></div>';
+  let W = [], i = 0, timer = null;
+  const stop = () => { clearTimeout(timer); timer = null; $('#go', el).textContent = 'Start'; };
+  cleanups.push(() => clearTimeout(timer));
+  const next = () => { if (i >= W.length) { stop(); return; } const w = W[i++]; $('#d', el).textContent = w; $('#p', el).textContent = `${i}/${W.length}`; let ms = 60000 / $('#w', el).value; if (/[.,!?;:]$/.test(w)) ms *= 1.8; timer = setTimeout(next, ms); };
+  $('#go', el).onclick = () => { if (timer) { stop(); return; } if (!W.length || i >= W.length) { W = $('#t', el).value.split(/\s+/).filter(Boolean); i = 0; } if (!W.length) return; $('#go', el).textContent = 'Pause'; next(); };
+  $('#w', el).oninput = e => $('#wv', el).textContent = e.target.value;
+}
+
+// ================= AUDIO =================
+function metro(el) {
+  el.innerHTML = '<div class="big"><span id="b">100</span> BPM</div><input id="r" type="range" min="40" max="240" value="100" style="width:100%"><div class="row"><button id="go">Start</button><button id="tap" class="alt">Tap tempo</button><label>Beats <select id="bt"><option>2</option><option>3</option><option selected>4</option><option>6</option></select></label></div><div id="dots" class="row" style="font-size:30px"></div>';
+  let on = false, beat = 0, next = 0, tm, taps = [];
+  const bpm = () => +$('#r', el).value, n = () => +$('#bt', el).value;
+  const draw = () => { $('#dots', el).innerHTML = Array.from({ length: n() }, (_, i) => `<span style="opacity:${on && i === beat ? 1 : .25}">●</span>`).join(''); };
+  const loop = () => { if (!on) return; if (performance.now() >= next) { beep(beat === 0 ? 1200 : 800, 60); draw(); beat = (beat + 1) % n(); next += 60000 / bpm(); } tm = setTimeout(loop, 8); };
+  const stop = () => { on = false; clearTimeout(tm); tm = null; $('#go', el).textContent = 'Start'; draw(); };
+  cleanups.push(stop);
+  $('#go', el).onclick = e => { if(on){stop();return;} clearTimeout(tm); on = true; e.target.textContent = 'Stop'; beat = 0; next = performance.now(); loop(); draw(); };
+  $('#r', el).oninput = () => $('#b', el).textContent = bpm();
+  $('#bt', el).onchange = () => { beat = 0; draw(); };
+  $('#tap', el).onclick = () => { const t = performance.now(); if (taps.length && t - taps[taps.length - 1] > 2000) taps = []; taps.push(t); taps = taps.slice(-6); if (taps.length > 1) { const v = Math.round(60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1))); $('#r', el).value = Math.max(40, Math.min(240, v)); $('#b', el).textContent = bpm(); } };
+  draw();
+}
+
+function morse(el) {
+  const M = { A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..', 0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.' };
+  const R = Object.fromEntries(Object.entries(M).map(([k, v]) => [v, k]));
+  el.innerHTML = '<textarea id="i" placeholder="Type text, or Morse using . - and spaces (use / between words)"></textarea><div class="row"><button id="tm">Text → Morse</button><button id="tt" class="alt">Morse → Text</button><button id="pl" class="alt">▶ Play sound</button></div><div id="o" class="out card"></div>';
+  const toM = t => t.toUpperCase().split('').map(c => c === ' ' ? '/' : M[c] || '').filter(Boolean).join(' ');
+  $('#tm', el).onclick = () => $('#o', el).textContent = toM($('#i', el).value);
+  $('#tt', el).onclick = () => $('#o', el).textContent = $('#i', el).value.trim().split(/\s*\/\s*/).map(w => w.trim().split(/\s+/).filter(Boolean).map(c => R[c] || '?').join('')).join(' ');
+  $('#pl', el).onclick = () => {
+    const m = /^[.\-\s/]+$/.test($('#i', el).value.trim()) ? $('#i', el).value : toM($('#i', el).value), c = ac(), u = .07; let t = c.currentTime + .05;
+    for (const ch of m) {
+      if (ch === '.' || ch === '-') { const d = ch === '.' ? u : 3 * u, o = c.createOscillator(), g = c.createGain(); o.frequency.value = 650; g.gain.value = .2; o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + d); t += d + u; }
+      else if (ch === ' ') t += 2 * u; else if (ch === '/') t += 4 * u;
+    }
+  };
+}
+
+// ================= BUILT-IN LEGACY TOOLS =================
+function snake(el) {
+  el.innerHTML = '<div class="row"><b id="score">Score: 0</b><span id="state" class="muted">Press Start, then use arrows or WASD.</span></div><div style="max-width:420px"><canvas id="board" width="400" height="400" tabindex="0" aria-label="Snake game board" style="display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#111827;touch-action:none"></canvas></div><div class="row"><button id="start">Start</button><button id="reset" class="alt">New game</button></div><div class="row" id="snakeDirections" style="max-width:230px"><button data-dir="up" class="alt">↑</button><button data-dir="left" class="alt">←</button><button data-dir="down" class="alt">↓</button><button data-dir="right" class="alt">→</button></div><p class="muted">Eat the green food. Don&#39;t hit the walls or your tail. Click the board before using the keyboard.</p>';
+  const canvas = $('#board', el), ctx = canvas.getContext('2d'), size = 20, cell = 20;
+  const dirs = { up:[0,-1], right:[1,0], down:[0,1], left:[-1,0] };
+  let body, dir, nextDir, food, score, run=false, over=false;
+  const spawnFood = () => {
+    const free=[]; for(let y=0;y<size;y++) for(let x=0;x<size;x++) if(!body.some(p=>p.x===x&&p.y===y)) free.push({x,y});
+    food = free.length ? free[Math.floor(Math.random()*free.length)] : null;
+  };
+  const draw = () => {
+    ctx.fillStyle='#111827'; ctx.fillRect(0,0,400,400);
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+    for(let i=1;i<size;i++){ctx.beginPath();ctx.moveTo(i*cell,0);ctx.lineTo(i*cell,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*cell);ctx.lineTo(400,i*cell);ctx.stroke();}
+    if(food){ctx.fillStyle='#4ade80';ctx.beginPath();ctx.arc(food.x*cell+10,food.y*cell+10,7,0,Math.PI*2);ctx.fill();}
+    body.forEach((p,i)=>{ctx.fillStyle=i===0?'#93c5fd':'#3b82f6';ctx.fillRect(p.x*cell+2,p.y*cell+2,cell-4,cell-4);});
+    $('#score',el).textContent=`Score: ${score}`;
+  };
+  const reset = () => { body=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; dir='right'; nextDir='right'; score=0; run=false; over=false; spawnFood(); $('#start',el).textContent='Start'; $('#state',el).textContent='Press Start, then use arrows or WASD.'; draw(); };
+  const setDir = d => { if(!dirs[d]) return; const [dx,dy]=dirs[d], [cx,cy]=dirs[dir]; if(dx===-cx&&dy===-cy&&body.length>1) return; nextDir=d; };
+  const end = message => { run=false; over=true; $('#start',el).textContent='Restart'; $('#state',el).textContent=message; };
+  const step = () => {
+    if(!run) return; dir=nextDir; const [dx,dy]=dirs[dir], head={x:body[0].x+dx,y:body[0].y+dy}, eating=!!food&&head.x===food.x&&head.y===food.y;
+    const collisionBody=eating?body:body.slice(0,-1);
+    if(head.x<0||head.x>=size||head.y<0||head.y>=size||collisionBody.some(p=>p.x===head.x&&p.y===head.y)){end('Game over. Press Restart to try again.');return;}
+    body.unshift(head);
+    if(eating){score++; if(body.length===size*size){end('You filled the whole board. You win!');}else spawnFood();}
+    else body.pop();
+    draw();
+  };
+  $('#start',el).onclick=()=>{if(over) reset(); run=!run; $('#start',el).textContent=run?'Pause':'Resume'; $('#state',el).textContent=run?'Playing — use arrows or WASD.':'Paused.'; canvas.focus();};
+  $('#reset',el).onclick=reset;
+  on(document,'keydown',e=>{if(location.hash.replace(/^#\/?/,'')!=='snake'||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||''))return;const d={ArrowUp:'up',w:'up',W:'up',ArrowRight:'right',d:'right',D:'right',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left'}[e.key];if(d){e.preventDefault();setDir(d);}});
+  $('#board',el).onpointerdown=e=>{canvas.focus();if(canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);};
+  $('#board',el).oncontextmenu=e=>e.preventDefault();
+  $('#board',el).addEventListener('touchstart',e=>{const t=e.touches[0];canvas._touch=[t.clientX,t.clientY];},{passive:true});
+  $('#board',el).addEventListener('touchend',e=>{if(!canvas._touch)return;const t=e.changedTouches[0],dx=t.clientX-canvas._touch[0],dy=t.clientY-canvas._touch[1];canvas._touch=null;if(Math.max(Math.abs(dx),Math.abs(dy))>20)setDir(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));},{passive:true});
+  $('#board',el).onclick=()=>canvas.focus();
+  const drop=e=>{const d=e.target.closest('button[data-dir]')?.dataset.dir;if(d)setDir(d);};
+  $('#snakeDirections',el).onclick=drop;
+  every(step,130); reset();
+}
+
+function keyboard(el) {
+  const keyRows = [
+    [['Escape','Esc','wide'],['F1','F1'],['F2','F2'],['F3','F3'],['F4','F4'],['F5','F5'],['F6','F6'],['F7','F7'],['F8','F8'],['F9','F9'],['F10','F10'],['F11','F11'],['F12','F12']],
+    [['Backquote','~'],['Digit1','1'],['Digit2','2'],['Digit3','3'],['Digit4','4'],['Digit5','5'],['Digit6','6'],['Digit7','7'],['Digit8','8'],['Digit9','9'],['Digit0','0'],['Minus','-'],['Equal','='],['Backspace','Backspace','wider']],
+    [['Tab','Tab','wide'],...['Q','W','E','R','T','Y','U','I','O','P'].map(k=>['Key'+k,k]),['BracketLeft','['],['BracketRight',']'],['Backslash','\\','wide']],
+    [['CapsLock','Caps','wider'],...['A','S','D','F','G','H','J','K','L'].map(k=>['Key'+k,k]),['Semicolon',';'],['Quote',"'"],['Enter','Enter','wider']],
+    [['ShiftLeft','Shift','wider'],...['Z','X','C','V','B','N','M'].map(k=>['Key'+k,k]),['Comma',','],['Period','.'],['Slash','/'],['ShiftRight','Shift','wider']],
+    [['ControlLeft','Ctrl','wide'],['MetaLeft','Win'],['AltLeft','Alt'],['Space','Space','space'],['AltRight','Alt'],['ContextMenu','Menu'],['ControlRight','Ctrl','wide']],
+    [['ArrowLeft','←'],['ArrowUp','↑'],['ArrowDown','↓'],['ArrowRight','→'],['Insert','Ins'],['Home','Home'],['PageUp','PgUp'],['Delete','Del'],['End','End'],['PageDown','PgDn']]
+  ];
+  const layout = keyRows.map(row=>`<div class="keyboard-row">${row.map(([code,label,size])=>`<div class="keyboard-key ${size||''}" data-code="${code}" title="${code}">${label}</div>`).join('')}</div>`).join('');
+  el.innerHTML = `<div class="row"><button id="focusKeys">Focus keyboard area</button><button id="clearKeys" class="alt">Clear results</button><button id="copyKeys" class="alt">Copy log</button><span id="copyStatus" class="muted" aria-live="polite"></span></div><div id="keyStage" class="keyboard-stage" tabindex="0" role="group" aria-label="Keyboard testing area"><div class="keyboard-row" style="justify-content:space-between"><b>Click here, then press keys on your physical keyboard</b><span class="muted">US layout</span></div>${layout}</div><div class="keyboard-stats"><div class="keyboard-stat">Keys pressed<b id="keyCount">0</b></div><div class="keyboard-stat">Different keys<b id="keyUnique">0</b></div><div class="keyboard-stat">Max held together<b id="keyRollover">0</b></div><div class="keyboard-stat">Currently held<b id="keyHeldCount">0</b></div></div><div class="card"><b>Currently held</b><div id="keyHeld" class="muted">None</div></div><div class="card"><b>Typed text</b><div id="keyTyped" class="keyboard-log">Click the keyboard area and type here.</div></div><div class="card"><b>Recent keyboard events</b><div id="keyLog" class="keyboard-log">Click the keyboard area and start typing.</div></div><p class="muted">The tester reads browser keyboard events (key and physical code). Some system shortcuts, media keys, and laptop function keys are intercepted by your operating system and cannot be detected by a web page.</p>`;
+  const stage=$('#keyStage',el), keyEls=new Map([...el.querySelectorAll('.keyboard-key')].map(k=>[k.dataset.code,k]));
+  const held=new Set(), seen=new Map(); let keyDowns=0,repeats=0,maxHeld=0,history=[],typed='';
+  const active=()=>location.hash.replace(/^#\/?/,'')==='keyboard' && (document.activeElement===stage || stage.contains(document.activeElement));
+  const draw=()=>{
+    keyEls.forEach((node,code)=>node.classList.toggle('down',held.has(code)));
+    $('#keyCount',el).textContent=keyDowns; $('#keyUnique',el).textContent=seen.size; $('#keyRollover',el).textContent=maxHeld; $('#keyHeldCount',el).textContent=held.size;
+    $('#keyHeld',el).textContent=held.size?[...held].map(code=>code).join(' · '):'None';
+    $('#keyTyped',el).textContent=typed || 'No text typed yet.';
+    $('#keyLog',el).textContent=history.slice(-14).join('\n') || 'No keyboard events yet.';
+  };
+  const record=(type,e)=>{
+    const code=e.code||'Unidentified', label=e.key===' '?'Space':e.key;
+    history.push(`${type}  ${label}  [${code}]${e.repeat?' (repeat)':''}`);
+    if(history.length>80) history=history.slice(-80);
+  };
+  const down=e=>{
+    if(!active())return;
+    if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+    const code=e.code||`Key:${e.key}`;
+    if(!e.repeat){keyDowns++;seen.set(code,(seen.get(code)||0)+1);}else repeats++;
+    held.add(code);maxHeld=Math.max(maxHeld,held.size); if(e.key.length===1) typed+=e.key; else if(e.key==='Backspace') typed=typed.slice(0,-1); else if(e.key==='Enter') typed+='\n'; record('DOWN',e);draw();
+  };
+  const up=e=>{
+    const code=e.code||`Key:${e.key}`; if(!active()&&!held.has(code))return;
+    held.delete(code);record('UP',e);draw();
+  };
+  const clearHeld=()=>{if(held.size){held.clear();draw();}};
+  on(document,'keydown',down,true); on(document,'keyup',up,true); on(window,'blur',clearHeld); on(document,'visibilitychange',()=>{if(document.hidden)clearHeld();});
+  stage.onblur=clearHeld;
+  $('#focusKeys',el).onclick=()=>stage.focus();
+  $('#clearKeys',el).onclick=()=>{keyDowns=0;repeats=0;maxHeld=0;seen.clear();history=[];typed='';held.clear();draw();stage.focus();};
+  $('#copyKeys',el).onclick=async()=>{$('#copyStatus',el).textContent=await copy(history.join('\n'))?'Copied':'Copy unavailable';};
+  stage.onclick=()=>stage.focus();
+  draw();
+}
+
+// ================= DEVICE TESTS =================
+function mouse(el) {
+  el.innerHTML = '<div id="pad" class="pad" style="height:260px">Move, click, and scroll here</div><div class="card" style="margin-top:12px"><div id="o" class="out"></div></div>';
+  const pad = $('#pad', el); let c = [0, 0, 0, 0, 0], dbl = 0, wh = 0, ev = 0, rate = 0, x = 0, y = 0, held = 0, maxRate = 0;
+  const N = ['Left', 'Middle', 'Right', 'Back', 'Forward'], B = [1, 4, 2, 8, 16];
+  const draw = () => { $('#o', el).textContent = `Position: ${x}, ${y}\nHeld now: ${N.filter((_, i) => held & B[i]).join(' + ') || 'none'}\nClicks: ${N.map((n, i) => n + ' ' + c[i]).join(' · ')}\nDouble-clicks: ${dbl}\nWheel: ${wh > 0 ? 'down' : wh < 0 ? 'up' : '–'} (total ${Math.round(wh)})\nMove events/sec: ${rate} (max ${maxRate}). Browsers may cap this, so treat it as a rough polling-rate guide.`; };
+  pad.onpointermove = e => { x = e.offsetX | 0; y = e.offsetY | 0; ev++; held = e.buttons; };
+  pad.onpointerdown = e => { if (c[e.button] !== undefined) c[e.button]++; held = e.buttons; draw(); };
+  pad.onpointerup = e => { held = e.buttons; draw(); };
+  pad.oncontextmenu = e => e.preventDefault();
+  pad.ondblclick = () => { dbl++; draw(); };
+  pad.onwheel = e => { e.preventDefault(); wh += e.deltaY; draw(); };
+  every(() => { rate = ev; maxRate = Math.max(maxRate, rate); ev = 0; draw(); }, 1000); draw();
+}
+
+function screen(el) {
+  el.innerHTML = '<p class="muted">Fills the screen with solid colors so you can spot dead pixels. Click or press any key to change color. Esc exits.</p><button id="go">Start test</button>';
+  const C = ['#000', '#fff', '#f00', '#0f0', '#00f', 'linear-gradient(90deg,#000,#fff)'];
+  $('#go', el).onclick = () => {
+    let i = 0, closed = false; const d = document.createElement('div'); d.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:none';
+    const set = () => d.style.background = C[i]; set(); document.body.appendChild(d);
+    const close = () => { if (closed) return; closed = true; d.remove(); document.removeEventListener('keydown', kd); document.removeEventListener('fullscreenchange', fc); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+    const adv = () => { i++; if (i >= C.length) close(); else set(); };
+    const kd = e => { e.preventDefault(); if (e.key === 'Escape') close(); else adv(); };
+    const fc = () => { if (!document.fullscreenElement) close(); };
+    d.onclick = adv; document.addEventListener('keydown', kd); document.addEventListener('fullscreenchange', fc); cleanups.push(close);
+    if (d.requestFullscreen) d.requestFullscreen().catch(() => {});
+  };
+}
+
+// ================= WEATHER & OUTDOORS =================
+function weather(el) {
+  el.innerHTML = `
+    <p class="muted">Search for a city or place, enter coordinates, or use your device location. This uses Open-Meteo's public forecast and geocoding services; no API key is needed for non-commercial use.</p>
+    <form id="weatherPlaceForm" class="row">
+      <input id="weatherPlace" type="search" placeholder="City or place (e.g. Whistler, BC)" aria-label="City or place" style="flex:1;min-width:220px">
+      <button id="weatherSearch" type="submit">Search place</button>
+      <button id="weatherLocate" class="alt" type="button">Use my location</button>
+    </form>
+    <details class="card">
+      <summary>Or enter coordinates manually</summary>
+      <div class="row">
+        <label>Latitude <input id="weatherLat" type="number" min="-90" max="90" step="any" placeholder="e.g. 49.28" style="width:125px"></label>
+        <label>Longitude <input id="weatherLon" type="number" min="-180" max="180" step="any" placeholder="e.g. -123.12" style="width:125px"></label>
+        <button id="weatherCoords" type="button">Use coordinates</button>
+      </div>
+    </details>
+    <div id="weatherStatus" class="muted" role="status" aria-live="polite">Enter a place to get its 24-hour forecast.</div>
+    <div id="weatherOutput" aria-live="polite"></div>
+    <p class="muted">Weather data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · CC BY 4.0.</p>`;
+
+  const placeForm = $('#weatherPlaceForm', el);
+  const placeInput = $('#weatherPlace', el);
+  const status = $('#weatherStatus', el);
+  const output = $('#weatherOutput', el);
+  const searchBtn = $('#weatherSearch', el);
+  const locateBtn = $('#weatherLocate', el);
+  const coordsBtn = $('#weatherCoords', el);
+  let requestNumber = 0;
+  let busy = false;
+
+  const setBusy = value => {
+    busy = value;
+    searchBtn.disabled = value;
+    locateBtn.disabled = value;
+    coordsBtn.disabled = value;
+    searchBtn.textContent = value ? 'Loading…' : 'Search place';
+  };
+
+  const requestJson = async (url, label) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+      let data;
+      try { data = await response.json(); }
+      catch (_) { throw new Error(`${label} returned an unreadable response.`); }
+      if (!response.ok || data?.error) {
+        const reason = data?.reason || data?.message || `HTTP ${response.status}`;
+        throw new Error(`${label}: ${reason}`);
+      }
+      return data;
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error(`${label} timed out. Check your connection and try again.`);
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const niceLocation = p => [p.name, p.admin1, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+  const weatherText = code => ({
+    0: ['Clear sky', '☀️'], 1: ['Mainly clear', '🌤️'], 2: ['Partly cloudy', '⛅'], 3: ['Overcast', '☁️'],
+    45: ['Fog', '🌫️'], 48: ['Depositing rime fog', '🌫️'], 51: ['Light drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy drizzle', '🌧️'],
+    56: ['Freezing drizzle', '🌧️'], 57: ['Heavy freezing drizzle', '🌧️'], 61: ['Light rain', '🌦️'], 63: ['Rain', '🌧️'], 65: ['Heavy rain', '🌧️'],
+    66: ['Freezing rain', '🌧️'], 67: ['Heavy freezing rain', '🌧️'], 71: ['Light snow', '🌨️'], 73: ['Snow', '❄️'], 75: ['Heavy snow', '❄️'],
+    77: ['Snow grains', '🌨️'], 80: ['Light rain showers', '🌦️'], 81: ['Rain showers', '🌧️'], 82: ['Heavy rain showers', '⛈️'],
+    85: ['Snow showers', '🌨️'], 86: ['Heavy snow showers', '❄️'], 95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm with hail', '⛈️'], 99: ['Severe thunderstorm with hail', '⛈️']
+  })[code] || ['Conditions unavailable', '🌡️'];
+
+  const loadForecast = async (lat, lon, name) => {
+    if (busy) return;
+    const myRequest = ++requestNumber;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      status.textContent = 'Enter a valid latitude (-90 to 90) and longitude (-180 to 180).';
+      return;
+    }
+    setBusy(true);
+    status.textContent = `Loading forecast for ${name}…`;
+    output.textContent = '';
+    const base = `latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&timezone=auto`;
+    const forecastUrl = `https://api.open-meteo.com/v1/forecast?${base}&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,snowfall,weather_code&forecast_hours=24&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm`;
+    const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?${base}&hourly=us_aqi&forecast_hours=24`;
+    try {
+      const [forecast, airResult] = await Promise.all([
+        requestJson(forecastUrl, 'Weather forecast'),
+        requestJson(airUrl, 'Air-quality forecast').then(data => ({ data, error: null })).catch(error => ({ data: null, error }))
+      ]);
+      if (myRequest !== requestNumber) return;
+      const H = forecast?.hourly;
+      const required = ['time', 'temperature_2m', 'precipitation_probability', 'wind_speed_10m'];
+      if (!H || required.some(key => !Array.isArray(H[key]) || !H[key].length)) {
+        throw new Error('The weather service did not return the hourly data needed for this forecast.');
+      }
+      const count = H.time.length;
+      if (required.slice(1).some(key => H[key].length < count)) throw new Error('The weather service returned incomplete hourly data. Please try again.');
+      const AQ = airResult.data?.hourly?.us_aqi;
+      const hasAQ = Array.isArray(AQ) && AQ.length > 0;
+      const get = (key, i, fallback = null) => Array.isArray(H[key]) && H[key][i] != null ? H[key][i] : fallback;
+      const rows = H.time.map((time, i) => {
+        const temp = get('temperature_2m', i), feels = get('apparent_temperature', i, temp);
+        const rainChance = get('precipitation_probability', i, 0), rain = get('precipitation', i, 0);
+        const wind = get('wind_speed_10m', i, 0), gust = get('wind_gusts_10m', i, wind);
+        const snow = get('snowfall', i, 0), code = get('weather_code', i, null), aqi = hasAQ ? (AQ[i] ?? null) : null;
+        let score = 100;
+        score -= Math.min(35, Math.abs(feels - 18) * 1.35);
+        score -= Math.min(35, rainChance * 0.45);
+        score -= Math.min(20, Math.max(0, wind - 12) * 0.8);
+        if (aqi != null) score -= Math.min(20, Math.max(0, aqi - 50) * 0.2);
+        return { time, temp, feels, rainChance, rain, wind, gust, snow, code, aqi, score: Math.max(0, Math.round(score)) };
+      });
+      const best = [...rows].sort((a, b) => b.score - a.score)[0];
+      const totalSnow = rows.reduce((sum, row) => sum + (Number(row.snow) || 0), 0);
+      const warnings = [];
+      if (rows.some(r => r.rainChance >= 60)) warnings.push('Rain is likely during at least one forecast hour.');
+      if (rows.some(r => r.wind >= 40 || r.gust >= 60)) warnings.push('Strong wind is forecast during at least one hour.');
+      if (rows.some(r => r.snow >= 1)) warnings.push('Snowfall is forecast during at least one hour.');
+      if (hasAQ && rows.some(r => r.aqi >= 100)) warnings.push('Air quality may be unhealthy for sensitive groups or worse during at least one hour.');
+
+      const fmt = value => value == null || !Number.isFinite(Number(value)) ? '—' : Number(value).toFixed(1);
+      const hourLabel = value => {
+        const parts = String(value).split('T');
+        if (parts.length < 2) return String(value);
+        const dateParts = parts[0].split('-').map(Number);
+        const weekday = dateParts.length === 3 && dateParts.every(Number.isFinite)
+          ? new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2])).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+          : '';
+        return `${weekday} ${parts[1].slice(0, 5)}`.trim();
+      };
+      const tone = score => score >= 70 ? 'var(--ok)' : score >= 40 ? '#ef6c00' : 'var(--bad)';
+      const alertHtml = warnings.length
+        ? `<div class="card"><b>Forecast heads-up</b><ul>${warnings.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>`
+        : '<div class="card">No notable rain, wind, snow, or air-quality warnings were found in the returned hours.</div>';
+      const rowsHtml = rows.map(r => {
+        const [description, icon] = weatherText(r.code);
+        return `<tr><td>${esc(hourLabel(r.time))}</td><td>${icon} ${esc(description)}</td><td>${fmt(r.temp)}°</td><td>${fmt(r.feels)}°</td><td>${fmt(r.rainChance)}%</td><td>${fmt(r.wind)}</td><td>${fmt(r.snow)}</td><td>${r.aqi == null ? '—' : Math.round(r.aqi)}</td><td style="color:${tone(r.score)};font-weight:700">${r.score}/100</td></tr>`;
+      }).join('');
+      const timezone = forecast.timezone ? ` · ${esc(forecast.timezone)}` : '';
+      output.innerHTML = `
+        <div class="card">
+          <div class="muted">24-hour forecast for</div>
+          <h3 style="margin:4px 0 12px">${esc(name)}${timezone}</h3>
+          <div class="row" style="align-items:stretch">
+            <div class="keyboard-stat" style="flex:1"><span class="muted">Best outdoor hour</span><b>${esc(hourLabel(best.time))}</b><span>${best.score}/100 suitability estimate</span></div>
+            <div class="keyboard-stat" style="flex:1"><span class="muted">Expected snowfall</span><b>${fmt(totalSnow)} cm</b><span>Across returned hours</span></div>
+            <div class="keyboard-stat" style="flex:1"><span class="muted">Air quality</span><b>${hasAQ ? Math.round(rows.find(r => r.aqi != null)?.aqi ?? 0) : '—'}</b><span>${hasAQ ? 'US AQI, first returned hour' : 'Feed unavailable'}</span></div>
+          </div>
+          <p class="muted">Outdoor suitability is a simple estimate based on temperature, precipitation, wind, and available air-quality data. It is not an official safety rating.</p>
+        </div>
+        ${alertHtml}
+        <div class="mine-wrap" style="overflow-x:auto"><table><thead><tr><th>Time</th><th>Conditions</th><th>Temp</th><th>Feels</th><th>Rain chance</th><th>Wind km/h</th><th>Snow cm</th><th>US AQI</th><th>Outdoor score</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+        ${airResult.error ? `<p class="muted">Air-quality data could not be loaded (${esc(airResult.error.message)}). The weather forecast is still available; AQI is shown as — rather than guessed.</p>` : ''}`;
+      status.textContent = `Forecast loaded for ${name}.`;
+    } catch (error) {
+      if (myRequest !== requestNumber) return;
+      status.textContent = `Could not load weather: ${error?.message || 'Unknown error'}`;
+      output.innerHTML = '<p class="muted">Check the place or coordinates and your internet connection, then try again.</p>';
+    } finally {
+      if (myRequest === requestNumber) setBusy(false);
+    }
+  };
+
+  const resolvePlace = async query => {
+    if (busy) return;
+    const myRequest = ++requestNumber;
+    setBusy(true);
+    status.textContent = `Finding ${query}…`;
+    output.textContent = '';
+    try {
+      const data = await requestJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=8&language=en&format=json`, 'Place search');
+      if (myRequest !== requestNumber) return;
+      const results = Array.isArray(data.results) ? data.results : [];
+      if (!results.length) throw new Error(`No places matched “${query}”. Try adding a province, state, or country.`);
+      if (results.length === 1) {
+        setBusy(false);
+        await loadForecast(Number(results[0].latitude), Number(results[0].longitude), niceLocation(results[0]));
+        return;
+      }
+      setBusy(false);
+      status.textContent = 'Choose the correct place from the matches:';
+      output.innerHTML = `<div class="card"><label for="weatherMatches"><b>Matching places</b></label><div class="row"><select id="weatherMatches" style="flex:1;min-width:220px">${results.map((p, i) => `<option value="${i}">${esc(niceLocation(p))}</option>`).join('')}</select><button id="weatherUseMatch" type="button">Get forecast</button></div></div>`;
+      $('#weatherUseMatch', el).onclick = () => {
+        const place = results[Number($('#weatherMatches', el).value)];
+        if (place) loadForecast(Number(place.latitude), Number(place.longitude), niceLocation(place));
+      };
+    } catch (error) {
+      if (myRequest !== requestNumber) return;
+      status.textContent = `Could not find that place: ${error?.message || 'Unknown error'}`;
+    } finally {
+      if (myRequest === requestNumber) setBusy(false);
+    }
+  };
+
+  placeForm.onsubmit = event => {
+    event.preventDefault();
+    const query = placeInput.value.trim();
+    if (!query) { status.textContent = 'Type a city or place first.'; placeInput.focus(); return; }
+    resolvePlace(query);
+  };
+  coordsBtn.onclick = () => {
+    const latText = $('#weatherLat', el).value.trim(), lonText = $('#weatherLon', el).value.trim();
+    if (!latText || !lonText) { status.textContent = 'Enter both latitude and longitude.'; return; }
+    const lat = Number(latText), lon = Number(lonText);
+    loadForecast(lat, lon, `Coordinates ${latText}, ${lonText}`);
+  };
+  locateBtn.onclick = () => {
+    if (busy) return;
+    if (!navigator.geolocation) { status.textContent = 'Location is not available in this browser. Search for a city or enter coordinates instead.'; return; }
+    setBusy(true); status.textContent = 'Requesting your location…';
+    navigator.geolocation.getCurrentPosition(position => {
+      setBusy(false);
+      loadForecast(position.coords.latitude, position.coords.longitude, 'Your current location');
+    }, error => {
+      setBusy(false);
+      const reason = error.code === 1 ? 'Location permission was denied.' : error.code === 2 ? 'Your location could not be determined.' : 'The location request timed out.';
+      status.textContent = `${reason} Search for a city or enter coordinates instead.`;
+    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  };
+}
+
+// ================= VISUAL =================
+function graph(el) {
+  el.innerHTML = '<div class="row"><span>y =</span><input id="e" value="sin(x)*x" style="flex:1"></div><canvas id="cv" width="640" height="420" style="width:100%;max-width:640px;border:1px solid var(--line);background:var(--card);touch-action:none"></canvas><p class="muted" id="m">Drag to pan, scroll to zoom. Functions: sin cos tan asin acos atan abs sqrt log exp floor ceil pow min max. Constants: pi, e. Use ^ for powers and * for multiply.</p>';
+  const cv = $('#cv', el), x = cv.getContext('2d'); let cx = 0, cy = 0, sc = 40, fn = null;
+  const FUNCS = { sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan, abs: Math.abs, sqrt: Math.sqrt, log: Math.log, exp: Math.exp, floor: Math.floor, ceil: Math.ceil, pow: Math.pow, min: Math.min, max: Math.max };
+  const tokenize = source => {
+    const tokens = [], re = /\s*(?:(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?|[a-zA-Z_]\w*|[+\-*/%^(),])/iy;
+    let at = 0;
+    while (at < source.length) {
+      if (!source.slice(at).trim()) break;
+      re.lastIndex = at; const m = re.exec(source);
+      if (!m) throw new Error(`Unexpected character near "${source.slice(at, at + 8)}"`);
+      tokens.push(m[0].trim()); at = re.lastIndex;
+    }
+    return tokens;
+  };
+  const compile = source => {
+    const tokens = tokenize(source); let at = 0;
+    const peek = () => tokens[at];
+    const expression = min => {
+      let left = primary();
+      const priority = { '+': 1, '-': 1, '*': 2, '/': 2, '%': 2, '^': 4 };
+      while (priority[peek()] !== undefined && priority[peek()] >= min) {
+        const op = tokens[at++], p = priority[op], right = expression(op === '^' ? p : p + 1), before = left;
+        left = value => { const a = before(value), b = right(value); return op === '+' ? a + b : op === '-' ? a - b : op === '*' ? a * b : op === '/' ? a / b : op === '%' ? a % b : Math.pow(a, b); };
+      }
+      return left;
+    };
+    const primary = () => {
+      const token = tokens[at++];
+      if (token === undefined) throw new Error('Expression is incomplete.');
+      if (token === '+' || token === '-') { const value = expression(3); return xValue => token === '-' ? -value(xValue) : value(xValue); }
+      if (token === '(') { const value = expression(0); if (peek() !== ')') throw new Error('Missing closing parenthesis.'); at++; return value; }
+      if (/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(token)) { const n = Number(token); return () => n; }
+      if (/^[a-zA-Z_]\w*$/.test(token)) {
+        if (token === 'x') return xValue => xValue;
+        if (token === 'pi') return () => Math.PI;
+        if (token === 'e') return () => Math.E;
+        if (!Object.prototype.hasOwnProperty.call(FUNCS, token) || peek() !== '(') throw new Error(`Unknown name: ${token}`);
+        at++; const args = [];
+        if (peek() !== ')') { while (true) { args.push(expression(0)); if (peek() !== ',') break; at++; } }
+        if (peek() !== ')') throw new Error(`Missing ) after ${token}.`);
+        at++;
+        const expected = token === 'pow' ? 2 : (token === 'min' || token === 'max' ? null : 1);
+        if ((expected !== null && args.length !== expected) || (expected === null && args.length < 1)) throw new Error(`${token}() has the wrong number of arguments.`);
+        return xValue => FUNCS[token](...args.map(arg => arg(xValue)));
+      }
+      throw new Error(`Unexpected token: ${token}`);
+    };
+    if (!tokens.length) throw new Error('Enter a function first.');
+    const result = expression(0);
+    if (at !== tokens.length) throw new Error(`Unexpected token: ${tokens[at]}`);
+    return result;
+  };
+  const draw = () => {
+    const W = cv.width, H = cv.height, fg = getComputedStyle(document.body).color; x.clearRect(0, 0, W, H);
+    const X = v => W / 2 + (v - cx) * sc, Y = v => H / 2 - (v - cy) * sc, st = [.1, .5, 1, 2, 5, 10, 50, 100].find(s => s * sc >= 40) || 100;
+    x.strokeStyle = fg; x.globalAlpha = .12; x.lineWidth = 1;
+    for (let g = Math.ceil((cx - W / 2 / sc) / st) * st; g < cx + W / 2 / sc; g += st) { x.beginPath(); x.moveTo(X(g), 0); x.lineTo(X(g), H); x.stroke(); }
+    for (let g = Math.ceil((cy - H / 2 / sc) / st) * st; g < cy + H / 2 / sc; g += st) { x.beginPath(); x.moveTo(0, Y(g)); x.lineTo(W, Y(g)); x.stroke(); }
+    x.globalAlpha = .6; x.beginPath(); x.moveTo(X(0), 0); x.lineTo(X(0), H); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke(); x.globalAlpha = 1;
+    if (!fn) return;
+    x.strokeStyle = '#1565c0'; x.lineWidth = 2; x.beginPath(); let pen = false, py = 0;
+    for (let i = 0; i <= W; i++) {
+      const v = cx + (i - W / 2) / sc; let y; try { y = fn(v); } catch (e) { y = NaN; }
+      if (typeof y !== 'number' || !isFinite(y)) { pen = false; continue; }
+      const p2 = Y(y); if (pen && Math.abs(p2 - py) > H * 2) pen = false;
+      pen ? x.lineTo(i, p2) : x.moveTo(i, p2); pen = true; py = p2;
+    }
+    x.stroke();
+  };
+  const parse = () => {
+    try { fn = compile($('#e', el).value); $('#m', el).textContent = 'Drag to pan, scroll to zoom. Functions: sin, cos, tan, asin, acos, atan, abs, sqrt, log, exp, floor, ceil, pow, min, max. Constants: pi, e. Use ^ for powers and * for multiply.'; }
+    catch (err) { fn = null; $('#m', el).textContent = 'Function error: ' + err.message; }
+    draw();
+  };
+  let drag = null; const k = () => cv.width / cv.getBoundingClientRect().width;
+  cv.onpointerdown = e => { drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!drag) return; cx -= (e.clientX - drag[0]) * k() / sc; cy += (e.clientY - drag[1]) * k() / sc; drag = [e.clientX, e.clientY]; draw(); };
+  cv.onpointerup = () => drag = null;
+  cv.onwheel = e => { e.preventDefault(); sc = Math.max(2, Math.min(2000, sc * (e.deltaY < 0 ? 1.15 : .87))); draw(); };
+  $('#e', el).oninput = parse; parse();
+}
+
+function weeks(el) {
+  el.innerHTML = '<div class="row"><label>Birth date <input type="date" id="d"></label><label>Years shown <input type="number" id="y" value="90" min="1" max="110" style="width:70px"></label></div><canvas id="cv" style="width:100%;max-width:560px"></canvas><div id="m" class="big" style="font-size:18px"></div><p class="muted">Each square is one week. Your birth date stays in this browser only.</p>';
+  const d = $('#d', el); d.value = store.get('bday', '');
+  const draw = () => {
+    const cv = $('#cv', el), Y = Math.min(110, +$('#y', el).value || 90), S = 10; cv.width = 52 * S; cv.height = Y * S;
+    const x = cv.getContext('2d'), b = d.value ? new Date(d.value + 'T00:00') : null, lived = b ? Math.max(0, Math.floor((Date.now() - b) / 6048e5)) : 0, fg = getComputedStyle(document.body).color;
+    for (let k = 0; k < 52 * Y; k++) {
+      const px = (k % 52) * S, py = (k / 52 | 0) * S;
+      if (k < lived) { x.fillStyle = '#1565c0'; x.fillRect(px + 1, py + 1, S - 2, S - 2); }
+      else { x.strokeStyle = fg; x.globalAlpha = .3; x.strokeRect(px + 1.5, py + 1.5, S - 3, S - 3); x.globalAlpha = 1; }
+    }
+    $('#m', el).textContent = b ? `${lived.toLocaleString()} weeks lived · about ${Math.max(0, 52 * Y - lived).toLocaleString()} left of ${52 * Y} (${Math.min(100, lived / (52 * Y) * 100).toFixed(1)}%)` : 'Pick your birth date';
+    store.set('bday', d.value);
+  };
+  el.oninput = draw; draw();
+}
+
+// ================= REGISTRY =================
+const T = [
+  { id: 'snake', n: 'Snake', c: 'Games', i: '🐍', d: 'Classic snake game with keyboard and touch controls', f: snake },
+  { id: 'keyboard', n: 'Keyboard tester', c: 'Device tests', i: '⌨️', d: 'Test keys, key release, and simultaneous rollover', f: keyboard },
+
+  { id: 'ttt', n: 'Tic-tac-toe', c: 'Games', i: '⭕', d: 'Unbeatable computer opponent', f: ttt },
+  { id: 'memory', n: 'Memory match', c: 'Games', i: '🃏', d: 'Find all the pairs', f: memory },
+  { id: 'whack', n: 'Whack-a-mole', c: 'Games', i: '🐹', d: '30-second reflex game', f: whack },
+  { id: 'reaction', n: 'Reaction time', c: 'Games', i: '⚡', d: 'How fast can you click?', f: reaction },
+  { id: 'g2048', n: '2048', c: 'Games', i: '🔢', d: 'Slide and merge tiles', f: g2048 },
+  { id: 'rps', n: 'Rock paper scissors', c: 'Games', i: '✂️', d: 'An AI that learns your habits', f: rps },
+  { id: 'life', n: 'Game of Life', c: 'Games', i: '🧬', d: 'Draw cells and watch them evolve', f: life },
+  { id: 'dice', n: 'Dice, coin & 8-ball', c: 'Games', i: '🎲', d: 'Random decisions', f: dice },
+  { id: 'connect4', n: 'Connect Four', c: 'Games', i: '🔴', d: 'Two-player four-in-a-row game', f: connect4 },
+  { id: 'minesweeper', n: 'Minesweeper', c: 'Games', i: '💣', d: 'Three difficulty levels and safe first click', f: minesweeper },
+  { id: 'hangman', n: 'Hangman', c: 'Games', i: '🔤', d: 'Guess the hidden word', f: hangman },
+
+  { id: 'pomodoro', n: 'Pomodoro timer', c: 'Productivity', i: '🍅', d: 'Focus and break cycles', f: pomodoro },
+  { id: 'todo', n: 'To-do list', c: 'Productivity', i: '✅', d: 'Saved in your browser', f: todo },
+  { id: 'notes', n: 'Markdown notes', c: 'Productivity', i: '📝', d: 'Write with live preview', f: notes },
+  { id: 'countdown', n: 'Countdowns', c: 'Productivity', i: '⏳', d: 'Days until your events', f: countdown },
+  { id: 'subs', n: 'Subscription tracker', c: 'Productivity', i: '💳', d: 'Monthly and yearly totals', f: subs },
+  { id: 'meetcost', n: 'Meeting cost ticker', c: 'Productivity', i: '💸', d: 'What this meeting is costing', f: meetcost },
+
+  { id: 'tip', n: 'Tip & loan calculator', c: 'Calculators', i: '🧮', d: 'Split bills, monthly payments', f: tip },
+  { id: 'units', n: 'Unit converter', c: 'Calculators', i: '📏', d: 'Length, weight, volume, speed, temp', f: units },
+  { id: 'sleep', n: 'Sleep calculator', c: 'Calculators', i: '😴', d: 'Best bed and wake times', f: sleep },
+  { id: 'clocks', n: 'World clock', c: 'Calculators', i: '🌍', d: 'Times in any zone', f: clocks },
+  { id: 'picker', n: 'Name picker & teams', c: 'Calculators', i: '🎯', d: 'Pick a winner or split groups', f: picker },
+  { id: 'santa', n: 'Secret Santa', c: 'Calculators', i: '🎅', d: 'Draw names with exclusions', f: santa },
+
+  { id: 'breathe', n: 'Breathing guide', c: 'Wellness', i: '🫁', d: 'Box, 4-7-8, and calm breathing', f: breathe },
+
+  { id: 'json', n: 'JSON formatter', c: 'Dev tools', i: '{ }', d: 'Format, minify, validate', f: json },
+  { id: 'b64', n: 'Base64 & JWT', c: 'Dev tools', i: '🔐', d: 'Encode, decode, read tokens', f: b64 },
+  { id: 'ts', n: 'Timestamp converter', c: 'Dev tools', i: '🕒', d: 'Unix, ISO, local time', f: ts },
+  { id: 'hash', n: 'Hash & UUID', c: 'Dev tools', i: '#️⃣', d: 'SHA hashes, computed locally', f: hash },
+  { id: 'regex', n: 'Regex tester', c: 'Dev tools', i: '🔍', d: 'Live matches and groups', f: regex },
+  { id: 'pass', n: 'Password generator', c: 'Dev tools', i: '🔑', d: 'Strong random passwords', f: pass },
+  { id: 'color', n: 'Color & contrast', c: 'Dev tools', i: '🎨', d: 'Contrast checker and palettes', f: color },
+
+  { id: 'words', n: 'Word counter', c: 'Writing', i: '🔤', d: 'Counts, reading level, top words', f: words },
+  { id: 'speed', n: 'Speed reader', c: 'Writing', i: '👁️', d: 'One word at a time', f: speed },
+
+  { id: 'metro', n: 'Metronome', c: 'Audio', i: '🥁', d: 'With tap tempo', f: metro },
+  { id: 'morse', n: 'Morse code', c: 'Audio', i: '📡', d: 'Translate and play', f: morse },
+
+  { id: 'mouse', n: 'Mouse tester', c: 'Device tests', i: '🖱️', d: 'Buttons, wheel, polling rate', f: mouse },
+  { id: 'screen', n: 'Screen tester', c: 'Device tests', i: '🖥️', d: 'Dead-pixel color check', f: screen },
+
+  { id: 'outdoor', n: 'Weather & outdoor planner', c: 'Outdoors', i: '🌦️', d: '24-hour forecast, air quality, and weather heads-up', f: weather },
+
+  { id: 'graph', n: 'Graphing calculator', c: 'Visual', i: '📊', d: 'Plot functions, zoom and pan', f: graph },
+  { id: 'weeks', n: 'Life in weeks', c: 'Visual', i: '🗓️', d: 'Your weeks as a grid', f: weeks }
+];
+
+const SOON = ['Bullet hell survivor','Pac-Man','Pinball','Frogger','Doodle jump','Dino runner','Space Invaders','Breakout','Tetris','Wordle clone','Sudoku','Chess vs AI','Battleship','Mastermind','Lunar lander','Idle mining game','Kanban board','Flashcards','Budget tracker','Time tracker','Habit tracker','Journal + mood chart','Eisenhower matrix','Mini spreadsheet','Whiteboard','Chart maker','CSV viewer','SQL playground','API tester','CSS generator','Cron explainer','Diff checker','QR code maker','Image compressor','Photo filters','Pixel art editor','Drum machine','Guitar tuner','Voice recorder','Flight tracker','ISS tracker','NASA picture of the day','Country explorer','Crypto tracker','Flocking boids','Gravity sandbox','Voxel world','3D phone viewer','AI interview practice','AI text adventure','AI study buddy','Receipt splitter','Hike planner','Trip itinerary builder','Virtual pet','Poll maker','Bingo cards'];
+
+// ================= ROUTER & HOME =================
+let Q = '', CAT = 'All';
+
+function home(app) {
+  const cats = ['All', ...new Set(T.map(t => t.c))];
+  app.innerHTML = `<input id="q" type="search" placeholder="Search tools… (press / to focus)" style="width:100%;font-size:16px" value="${esc(Q)}"><div class="chips" id="ch"></div><div id="g" class="grid"></div><div id="n" class="muted" style="margin:14px 0"></div><details class="card"><summary><b>Ideas not built yet</b> (${SOON.length})</summary><div class="chips" style="margin-top:10px">${SOON.map(s => `<span class="chip" style="opacity:.7">${esc(s)}</span>`).join('')}</div></details>`;
+  const draw = () => {
+    $('#ch', app).innerHTML = cats.map(c => `<button class="chip ${c === CAT ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+    const q = Q.toLowerCase(), L = T.filter(t => (CAT === 'All' || t.c === CAT) && (t.n + ' ' + t.d + ' ' + t.c).toLowerCase().includes(q));
+    $('#g', app).innerHTML = L.map(t => `<a class="tile" href="${t.href || '#/' + t.id}" ${t.href ? 'target="_blank" rel="noopener"' : ''}><div class="i">${t.i}</div><b>${esc(t.n)}</b><span>${esc(t.d)}</span></a>`).join('');
+    $('#n', app).textContent = L.length ? `${L.length} tool${L.length === 1 ? '' : 's'}` : 'No tools match that search.';
+  };
+  $('#q', app).oninput = e => { Q = e.target.value; draw(); };
+  $('#ch', app).onclick = e => { const button=e.target.closest('button[data-c]'); if(button){CAT=button.dataset.c;draw();} };
+  on(document, 'keydown', e => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); $('#q', app).focus(); } });
+  draw();
+}
+
+function route() {
+  cleanups.splice(0).forEach(f => { try { f(); } catch (e) {} });
+  document.title = 'My Tools';
+  const id = location.hash.replace(/^#\/?/, ''), t = T.find(x => x.id === id && x.f), app = $('#app');
+  app.innerHTML = '';
+  $('#sub').textContent = `${T.length} tools in one place. Click one to open it.`;
+  if (!t) { home(app); return; }
+  const head = document.createElement('div');
+  head.innerHTML = `<a class="back" href="#/">← All tools</a><h2>${t.i} ${esc(t.n)}</h2>`;
+  app.appendChild(head);
+  const el = document.createElement('div'); app.appendChild(el);
+  try { t.f(el); } catch (e) { el.innerHTML = '<div class="card">Something went wrong: ' + esc(e.message) + '</div>'; }
+  scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
