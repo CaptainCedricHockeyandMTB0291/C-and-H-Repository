@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All-in-One JavaScript Utility Starter</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      background: #f9fafb;
+      color: #111827;
+    }
+    .card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button:hover { background: #1d4ed8; }
+    input {
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      margin-right: 8px;
+    }
+    pre {
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>JS Utility Playground</h1>
+  <p>Open your browser console (<strong>F12</strong>) or use the buttons below to test the built-in functions.</p>
+
+  <div class="card">
+    <h3>Interactive Demo</h3>
+    <input type="text" id="demo-input" placeholder="Type to test debounce..." />
+    <button id="btn-copy">Copy Sample Text</button>
+    <button id="btn-fetch">Fetch Sample API</button>
+    <pre id="output">Output will appear here...</pre>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * COMPLETE JAVASCRIPT UTILITY & STARTER TEMPLATE
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. DOM & UI HELPERS
+    // ----------------------------------------------------------------------------
+    const $ = (selector, parent = document) => parent.querySelector(selector);
+    const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
+
+    function createElement(tag, attributes = {}, textContent = '') {
+      const el = document.createElement(tag);
+      Object.entries(attributes).forEach(([key, value]) => el.setAttribute(key, value));
+      if (textContent) el.textContent = textContent;
+      return el;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.error('Clipboard copy failed:', err);
+        return false;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 2. NETWORKING & ASYNC HELPERS
+    // ----------------------------------------------------------------------------
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    async function fetchJSON(url, options = {}) {
+      try {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json', ...options.headers },
+          ...options,
+        });
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        return await response.json();
+      } catch (error) {
+        console.error('Fetch failed:', error.message);
+        return null;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. PERFORMANCE (DEBOUNCE & THROTTLE)
+    // ----------------------------------------------------------------------------
+    function debounce(fn, delay = 300) {
+      let timeoutId;
+      return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    function throttle(fn, limit = 300) {
+      let inThrottle;
+      return (...args) => {
+        if (!inThrottle) {
+          fn(...args);
+          inThrottle = true;
+          setTimeout(() => (inThrottle = false), limit);
+        }
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. STORAGE WRAPPER (JSON SAFE)
+    // ----------------------------------------------------------------------------
+    const storage = {
+      set(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      },
+      get(key, fallback = null) {
+        try {
+          const item = localStorage.getItem(key);
+          return item ? JSON.parse(item) : fallback;
+        } catch {
+          return fallback;
+        }
+      },
+      remove(key) {
+        localStorage.removeItem(key);
+      },
+    };
+
+    // ----------------------------------------------------------------------------
+    // 5. DATA, ARRAYS & FORMATTING
+    // ----------------------------------------------------------------------------
+    const unique = (arr) => [...new Set(arr)];
+
+    const clone = (obj) => structuredClone(obj);
+
+    const groupBy = (arr, key) =>
+      arr.reduce((acc, item) => {
+        (acc[item[key]] = acc[item[key]] || []).push(item);
+        return acc;
+      }, {});
+
+    const formatCurrency = (amount, currency = 'CAD', locale = 'en-CA') =>
+      new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
+
+    const formatDate = (date, locale = 'en-CA') =>
+      new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(date));
+
+    const capitalize = (str) =>
+      str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+
+    const randomInt = (min, max) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // ----------------------------------------------------------------------------
+    // 6. VALIDATION HELPERS
+    // ----------------------------------------------------------------------------
+    const isEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const isEmpty = (val) =>
+      val == null ||
+      (typeof val === 'string' && val.trim() === '') ||
+      (Array.isArray(val) && val.length === 0) ||
+      (typeof val === 'object' && Object.keys(val).length === 0);
+
+    // ----------------------------------------------------------------------------
+    // 7. APPLICATION START / ENTRY POINT
+    // ----------------------------------------------------------------------------
+    function logOutput(message) {
+      console.log(message);
+      $('#output').textContent = typeof message === 'object'
+        ? JSON.stringify(message, null, 2)
+        : message;
+    }
+
+    async function initApp() {
+      // Save & read timestamp from localStorage
+      storage.set('appLoadedAt', new Date().toISOString());
+      const loadedDate = formatDate(storage.get('appLoadedAt'));
+
+      logOutput(`App initialized on ${loadedDate} | Sample Price: ${formatCurrency(49.99)}`);
+
+      // Demo 1: Debounced input listener
+      $('#demo-input').addEventListener(
+        'input',
+        debounce((e) => {
+          logOutput(`Debounced input value: "${capitalize(e.target.value)}"`);
+        }, 400)
+      );
+
+      // Demo 2: Copy to clipboard button
+      $('#btn-copy').addEventListener('click', async () => {
+        const success = await copyToClipboard('Hello from JS Utility Starter!');
+        logOutput(success ? 'Copied text to clipboard!' : 'Failed to copy text.');
+      });
+
+      // Demo 3: Fetch JSON button
+      $('#btn-fetch').addEventListener('click', async () => {
+        logOutput('Fetching sample post...');
+        const data = await fetchJSON('https://typicode.com');
+        logOutput(data || 'Error fetching data.');
+      });
+    }
+
+    // Start the script safely once the DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>
