@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FPS test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e9edf5; --panel: #ffffff; --ink: #16213a; --muted: #5f6b85; --soft: #eff2f8;
+    --accent: #0f9d8a; --good: #1fa97a; --warn: #e8a200; --bad: #e5484d;
+    --stage: #0d2233;
+    --font: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161f; --panel: #19222e; --ink: #e8eefb; --muted: #94a2bd; --soft: #212d3b;
+      --accent: #34d3b9; --good: #3ddc97; --warn: #ffc233; --bad: #ff6b70; --stage: #08141f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161f; --panel: #19222e; --ink: #e8eefb; --muted: #94a2bd; --soft: #212d3b;
+    --accent: #34d3b9; --good: #3ddc97; --warn: #ffc233; --bad: #ff6b70; --stage: #08141f;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+{ box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px; background: var(--bg); color: var(--ink); font-family: var(--font); }
+  main { max-width: 720px; margin: 0 auto; background: var(--panel); border-radius: 24px; padding: 24px; box-shadow: 0 18px 50px rgba(10, 20, 40, .14); }
+  h1 { margin: 0 0 4px; font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { margin: 0 0 18px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+  .stage { position: relative; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: var(--stage); }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; left: 16px; top: 12px; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.5); pointer-events: none; }
+  .hud b { font-size: clamp(40px, 9vw, 64px); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .hud span { margin-left: 6px; font-size: 16px; opacity: .8; }
+  .pill { position: absolute; right: 12px; top: 12px; padding: 6px 12px; border-radius: 999px; background: rgba(0,0,0,.45); color: #fff; font-size: 14px; }
+  .graphhead { display: flex; justify-content: space-between; margin: 16px 0 6px; font-size: 14px; color: var(--muted); }
+  #graph { display: block; width: 100%; height: 72px; border-radius: 10px; background: var(--soft); }
+  .loads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 18px 0 14px; }
+  .load { padding: 10px 6px; border: 2px solid transparent; border-radius: 14px; background: var(--soft); color: var(--ink); font: 500 15px var(--font); cursor: pointer; }
+  .load small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .load[aria-checked="true"] { border-color: var(--accent); }
+  .load:disabled { opacity: .55; cursor: not-allowed; }
+  #go { width: 100%; padding: 16px; border: 0; border-radius: 14px; background: var(--accent); color: #04211c; font: 700 17px var(--font); cursor: pointer; }
+  #go:disabled { opacity: .55; cursor: progress; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 18px; }
+  .tile { padding: 12px 14px; border-radius: 14px; background: var(--soft); }
+  .tile span { display: block; font-size: 13px; color: var(--muted); }
+  .tile strong { display: block; margin-top: 2px; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile small { font-size: 12px; color: var(--muted); }
+  .verdict { margin: 16px 0 0; min-height: 22px; font-size: 16px; font-weight: 500; line-height: 1.5; }
+  .note { margin: 14px 0 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+  @media (max-width: 480px) { .loads { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>FPS test</h1>
+  <p class="sub">Measures how smoothly your browser draws animation. Pick a load, then run a 10-second test.</p>
+
+  <div class="stage">
+    <canvas id="stage"></canvas>
+    <div class="hud"><b id="fps">0</b><span>FPS</span></div>
+    <div class="pill" id="pill">Checking your display…</div>
+  </div>
+
+  <div class="graphhead"><span>Frame time, last 180 frames (shorter is smoother)</span><span id="hz"></span></div>
+  <canvas id="graph"></canvas>
+
+  <div class="loads" role="radiogroup" aria-label="Load">
+    <button class="load" role="radio" aria-checked="false" data-k="1000">Light<small>1,000 objects</small></button>
+    <button class="load" role="radio" aria-checked="true" data-k="4000">Medium<small>4,000 objects</small></button>
+    <button class="load" role="radio" aria-checked="false" data-k="10000">Heavy<small>10,000 objects</small></button>
+    <button class="load" role="radio" aria-checked="false" data-k="25000">Extreme<small>25,000 objects</small></button>
+  </div>
+  <button id="go" disabled>Run 10-second test</button>
+
+  <div class="tiles">
+    <div class="tile"><span>Average</span><strong id="r-avg">–</strong><small>FPS</small></div>
+    <div class="tile"><span>1% low</span><strong id="r-low">–</strong><small>FPS</small></div>
+    <div class="tile"><span>Minimum</span><strong id="r-min">–</strong><small>FPS</small></div>
+    <div class="tile"><span>Frame time</span><strong id="r-ft">–</strong><small>ms average</small></div>
+  </div>
+  <p class="verdict" id="verdict"></p>
+  <p class="note">Browsers cap animation at your display’s refresh rate, so a result at that rate means no slowdown at this load, not that your PC can’t go higher. Raise the load to find where it starts to drop. Close other tabs and apps first, and keep this tab in front while testing.</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const stage = $("stage"), sctx = stage.getContext("2d");
+const graph = $("graph"), gctx = graph.getContext("2d");
+const goBtn = $("go"), pill = $("pill"), loadBtns = [...document.querySelectorAll(".load")];
+const TEST_MS = 10000, SKIP = 10, HIST = 180;
+const COLORS = ["#4dd0e1", "#ffd166", "#ff8fab", "#a78bfa", "#7ee081"];
+
+let W = 0, H = 0, dpr = 1, count = 4000;
+let px, py, vx, vy, pr;
+let hz = 0, target = 16.7;
+let detecting = true, detectDeltas = [];
+let running = false, runStart = 0, runDeltas = [];
+let hist = [], recent = [], last = 0, lastHud = 0;
+
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = stage.getBoundingClientRect();
+  W = stage.width = Math.round(r.width * dpr);
+  H = stage.height = Math.round(r.height * dpr);
+  const g = graph.getBoundingClientRect();
+  graph.width = Math.round(g.width * dpr); graph.height = Math.round(g.height * dpr);
+  if (!detecting) initParticles();
+}
+function initParticles() {
+  px = new Float32Array(count); py = new Float32Array(count);
+  vx = new Float32Array(count); vy = new Float32Array(count); pr = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * 6.283, s = (40 + Math.random() * 200) * dpr;
+    px[i] = Math.random() * W; py[i] = Math.random() * H;
+    vx[i] = Math.cos(a) * s; vy[i] = Math.sin(a) * s;
+    pr[i] = (1.5 + Math.random() * 3.5) * dpr;
+  }
+}
+
+function drawScene(dt) {
+  sctx.clearRect(0, 0, W, H);
+  if (detecting) return;
+  for (let i = 0; i < count; i++) {
+    let x = px[i] + vx[i] * dt, y = py[i] + vy[i] * dt;
+    if (x < 0 || x > W) { vx[i] = -vx[i]; x = Math.min(Math.max(x, 0), W); }
+    if (y < 0 || y > H) { vy[i] = -vy[i]; y = Math.min(Math.max(y, 0), H); }
+    px[i] = x; py[i] = y;
+  }
+  for (let b = 0; b < COLORS.length; b++) {
+    sctx.fillStyle = COLORS[b];
+    sctx.beginPath();
+    for (let i = b; i < count; i += COLORS.length) {
+      sctx.moveTo(px[i] + pr[i], py[i]);
+      sctx.arc(px[i], py[i], pr[i], 0, 6.283);
+    }
+    sctx.fill();
+  }
+}
+
+function drawGraph() {
+  const w = graph.width, h = graph.height, max = 50;
+  gctx.clearRect(0, 0, w, h);
+  const bw = w / HIST;
+  const good = cssVar("--good"), warn = cssVar("--warn"), bad = cssVar("--bad");
+  hist.forEach((d, i) => {
+    gctx.fillStyle = d <= target * 1.25 ? good : d <= target * 2 ? warn : bad;
+    const bh = Math.max(2, Math.min(d, max) / max * h);
+    gctx.fillRect(i * bw, h - bh, Math.max(1, bw - 1), bh);
+  });
+  const y = h - Math.min(target, max) / max * h;
+  gctx.strokeStyle = cssVar("--muted"); gctx.lineWidth = dpr; gctx.setLineDash([4 * dpr, 4 * dpr]);
+  gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(w, y); gctx.stroke(); gctx.setLineDash([]);
+}
+
+function snapHz(raw) {
+  const common = [30, 50, 60, 75, 90, 100, 120, 144, 165, 180, 240, 360];
+  const near = common.reduce((a, b) => Math.abs(b - raw) < Math.abs(a - raw) ? b : a);
+  return Math.abs(near - raw) / near < .06 ? near : Math.round(raw);
+}
+function finishDetect() {
+  const s = [...detectDeltas].sort((a, b) => a - b);
+  hz = snapHz(1000 / s[Math.floor(s.length / 2)]);
+  target = 1000 / hz;
+  $("hz").textContent = Display: about ${hz} Hz;
+  detecting = false; initParticles();
+  pill.textContent = "Live";
+  goBtn.disabled = false;
+}
+
+function finishTest(cancelled) {
+  running = false;
+  goBtn.disabled = false; goBtn.textContent = "Run again";
+  loadBtns.forEach(b => b.disabled = false);
+  pill.textContent = "Live";
+  if (cancelled) { $("verdict").textContent = "Test cancelled because the tab lost focus. Keep it in front and try again."; return; }
+  const d = runDeltas, total = d.reduce((a, b) => a + b, 0);
+  const avg = d.length / (total / 1000);
+  const sorted = [...d].sort((a, b) => b - a);
+  const slice = sorted.slice(0, Math.max(1, Math.ceil(d.length * .01)));
+  const low = 1000 / (slice.reduce((a, b) => a + b, 0) / slice.length);
+  const min = 1000 / sorted[0];
+  $("r-avg").textContent = Math.round(avg);
+  $("r-low").textContent = Math.round(low);
+  $("r-min").textContent = Math.round(min);
+  $("r-ft").textContent = (total / d.length).toFixed(1);
+  const ratio = avg / hz;
+  let msg = ratio >= .95 ? Smooth. Your PC held your display’s ${hz} Hz at this load.
+    : ratio >= .75 ? "Mostly smooth, with some dips below your display’s refresh rate."
+    : "Dropped well below your display’s refresh rate at this load. Try a lighter one to find your limit.";
+  if (low < avg * .6) msg += " Frame pacing was uneven: the 1% low is far below the average, so you’d notice stutter.";
+  $("verdict").textContent = msg;
+}
+
+function frame(t) {
+  const dt = last ? t - last : 0;
+  last = t;
+  if (dt > 0 && dt < 1000) {
+    recent.push({ t, dt });
+    while (recent.length && t - recent[0].t > 500) recent.shift();
+    hist.push(dt); if (hist.length > HIST) hist.shift();
+    if (detecting) { detectDeltas.push(dt); if (detectDeltas.length >= 60) finishDetect(); }
+    if (running) {
+      const el = t - runStart;
+      if (el > 0 && hist.length) runDeltas.push(dt);
+      pill.textContent = Testing… ${Math.max(0, Math.ceil((TEST_MS - el) / 1000))}s left;
+      if (el >= TEST_MS) finishTest(false);
+    }
+  }
+  drawScene(Math.min(dt, 50) / 1000);
+  drawGraph();
+  if (t - lastHud > 250 && recent.length > 1) {
+    lastHud = t;
+    $("fps").textContent = Math.round(recent.length / ((recent[recent.length - 1].t - recent[0].t + recent[0].dt) / 1000));
+  }
+  requestAnimationFrame(frame);
+}
+
+loadBtns.forEach(b => b.addEventListener("click", () => {
+  loadBtns.forEach(o => o.setAttribute("aria-checked", o === b));
+  count = +b.dataset.k;
+  if (!detecting) initParticles();
+}));
+goBtn.addEventListener("click", () => {
+  running = true; runDeltas = []; runStart = performance.now();
+  goBtn.disabled = true; goBtn.textContent = "Testing…";
+  loadBtns.forEach(b => b.disabled = true);
+  ["r-avg", "r-low", "r-min", "r-ft"].forEach(id => $(id).textContent = "–");
+  $("verdict").textContent = "";
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden && running) finishTest(true); });
+addEventListener("resize", resize);
+
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
