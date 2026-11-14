@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air Quality & Weather Alerts</title>
+<style>
+  :root { --bg:#f4f4f0; --fg:#1a1a1a; --card:#fff; --line:#e3e3dc; --ok:#2e7d32; --warn:#ef6c00; --bad:#d32f2f; --blue:#1565c0; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121212; --fg:#eee; --card:#1e1e1e; --line:#333; --ok:#66bb6a; --warn:#ffa726; --bad:#ef5350; --blue:#64b5f6; }
+  }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; display:flex; justify-content:center; }
+  .wrap { width:100%; max-width:560px; }
+  h1 { margin:0 0 4px; }
+  .sub { opacity:.7; font-size:14px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .big { font-size:34px; font-weight:700; }
+  .label { font-size:12px; text-transform:uppercase; opacity:.6; }
+  .alert { padding:12px 14px; border-radius:8px; margin-bottom:8px; font-weight:600; color:#fff; }
+  .alert.bad { background:var(--bad); } .alert.blue { background:var(--blue); } .alert.ok { background:var(--ok); }
+  label { display:block; font-size:14px; margin:8px 0 4px; }
+  input { width:100%; box-sizing:border-box; padding:8px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+  .row { display:flex; gap:8px; }
+  button { padding:10px 14px; border:none; border-radius:8px; background:var(--blue); color:#fff; font-weight:600; cursor:pointer; margin-top:10px; }
+  #log { font-size:13px; opacity:.75; max-height:120px; overflow:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Air Quality & Weather Alerts</h1>
+  <div class="sub" id="status">Starting…</div>
+
+  <div id="alerts"></div>
+
+  <div class="card grid">
+    <div><div class="label">AQI (US)</div><div class="big" id="aqi">–</div><div id="aqiText"></div></div>
+    <div><div class="label">PM2.5</div><div class="big" id="pm">–</div><div>µg/m³</div></div>
+    <div><div class="label">Temperature</div><div class="big" id="temp">–</div></div>
+    <div><div class="label">Rain chance (next 3h)</div><div class="big" id="rain">–</div></div>
+  </div>
+
+  <div class="card">
+    <strong>Triggers</strong>
+    <label>Close windows when AQI is above</label>
+    <input id="aqiLimit" type="number" value="100">
+    <label>Umbrella reminder when rain chance is above (%)</label>
+    <input id="rainLimit" type="number" value="40">
+    <label>Check every (minutes)</label>
+    <input id="mins" type="number" value="15" min="1">
+    <label>Location (leave blank to use your device location)</label>
+    <div class="row">
+      <input id="lat" placeholder="Latitude">
+      <input id="lon" placeholder="Longitude">
+    </div>
+    <button id="go">Save & check now</button>
+  </div>
+
+  <div class="card"><strong>Log</strong><div id="log"></div></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let timer, lastSent = {};
+
+function log(msg) {
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString() + "  " + msg;
+  $('log').prepend(d);
+}
+
+function aqiLabel(a) {
+  if (a <= 50) return "Good";
+  if (a <= 100) return "Moderate";
+  if (a <= 150) return "Unhealthy for sensitive groups";
+  if (a <= 200) return "Unhealthy";
+  if (a <= 300) return "Very unhealthy";
+  return "Hazardous";
+}
+
+function getCoords() {
+  const lat = parseFloat($('lat').value), lon = parseFloat($('lon').value);
+  if (!isNaN(lat) && !isNaN(lon)) return Promise.resolve({ lat, lon });
+  return new Promise((res, rej) =>
+    navigator.geolocation
+      ? navigator.geolocation.getCurrentPosition(
+          p => res({ lat: p.coords.latitude, lon: p.coords.longitude }),
+          () => rej(new Error("Location blocked. Enter latitude/longitude manually.")))
+      : rej(new Error("Geolocation not supported. Enter latitude/longitude manually.")));
+}
+
+function notify(key, title, body) {
+  // don't repeat the same alert more than once every 3 hours
+  if (lastSent[key] && Date.now() - lastSent[key] < 3 * 3600 * 1000) return;
+  lastSent[key] = Date.now();
+  log("ALERT: " + title);
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, { body });
+  }
+}
+
+async function check() {
+  try {
+    $('status').textContent = "Checking…";
+    const { lat, lon } = await getCoords();
+
+    const [air, wx] = await Promise.all([
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,pm2_5`).then(r => r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&hourly=precipitation_probability&forecast_hours=3&timezone=auto`).then(r => r.json())
+    ]);
+
+    const aqi = Math.round(air.current.us_aqi);
+    const pm = air.current.pm2_5;
+    const temp = wx.current.temperature_2m;
+    const rain = Math.max(...wx.hourly.precipitation_probability);
+
+    $('aqi').textContent = aqi;
+    $('aqiText').textContent = aqiLabel(aqi);
+    $('pm').textContent = pm.toFixed(1);
+    $('temp').textContent = Math.round(temp) + "°C";
+    $('rain').textContent = rain + "%";
+
+    const box = $('alerts');
+    box.innerHTML = "";
+    const aqiLimit = +$('aqiLimit').value, rainLimit = +$('rainLimit').value;
+
+    if (aqi > aqiLimit) {
+      box.innerHTML += `<div class="alert bad">Air quality is ${aqiLabel(aqi).toLowerCase()} (AQI ${aqi}). Close your windows.</div>`;
+      notify("aqi", "Close your windows", `AQI is ${aqi} (${aqiLabel(aqi)}). Smoke may be drifting in.`);
+    }
+    if (rain > rainLimit) {
+      box.innerHTML += `<div class="alert blue">${rain}% chance of rain soon. Grab an umbrella.</div>`;
+      notify("rain", "Grab an umbrella", `${rain}% chance of rain in the next 3 hours.`);
+    }
+    if (!box.innerHTML) box.innerHTML = `<div class="alert ok">All clear. No alerts right now.</div>`;
+
+    $('status').textContent = "Last checked " + new Date().toLocaleTimeString() + " · keep this tab open for alerts";
+    log(`AQI ${aqi}, rain ${rain}%, ${Math.round(temp)}°C`);
+  } catch (e) {
+    $('status').textContent = "Error: " + e.message;
+    log("Error: " + e.message);
+  }
+}
+
+function start() {
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  clearInterval(timer);
+  check();
+  timer = setInterval(check, Math.max(1, +$('mins').value) * 60000);
+}
+
+$('go').onclick = start;
+start();
+</script>
+</body>
+</html>
