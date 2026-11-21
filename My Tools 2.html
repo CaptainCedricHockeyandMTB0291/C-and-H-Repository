@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Tools 2</title>
+<style>
+:root{--bg:#f4f4f0;--fg:#1a1a1a;--card:#fff;--line:#e3e3dc;--blue:#1565c0;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{--bg:#121212;--fg:#eee;--card:#1e1e1e;--line:#333;--blue:#64b5f6}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px}.muted{opacity:.7;font-size:13px}
+input,select,textarea,button{font:inherit;font-size:14px}
+input,select,textarea{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);min-width:0}
+textarea{width:100%;min-height:110px;font-family:ui-monospace,monospace}
+button{padding:9px 14px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-weight:600;cursor:pointer}
+button.alt{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}.chip.on{background:var(--blue);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tile{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.tile:hover{border-color:var(--blue)}.tile .i{font-size:26px}.tile b{display:block;margin:4px 0 2px}.tile span{font-size:12px;opacity:.7}
+a.back{color:var(--blue);text-decoration:none;font-weight:600}.big{font-size:26px;font-weight:700}
+.cell{display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font-weight:700;padding:0}
+.k3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.k4{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+</style></head><body><div class="wrap"><h1 style="margin:0 0 4px">My Tools 2</h1><div class="muted" id="sub"></div><div id="app"></div></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem('hub2.'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('hub2.'+k,JSON.stringify(v))}catch(e){}}};
+const cleanups=[];
+const on=(t,e,f,o)=>{t.addEventListener(e,f,o);cleanups.push(()=>t.removeEventListener(e,f,o))};
+const every=(f,ms)=>{const i=setInterval(f,ms);cleanups.push(()=>clearInterval(i));return i};
+const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let AC;const beep=(f=880,ms=150)=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.frequency.value=f;g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+ms/1000);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+ms/1000+.02)}catch(e){}};
+const ymd=o=>{const d=new Date();d.setDate(d.getDate()-o);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const arr=(k)=>{const v=store.get(k,[]);return Array.isArray(v)?v:[]};
+
+function breakout(el){
+ el.innerHTML='<canvas id="cv" width="480" height="360" style="width:100%;max-width:480px;background:#111;border-radius:10px;touch-action:none"></canvas><p class="muted">Move the mouse or finger, or use ← →. Click to launch.</p>';
+ const cv=$('#cv',el),x=cv.getContext('2d');let p,b,br,sc,lv,live,msg;
+ const init=()=>{p=240;b={x:240,y:330,dx:0,dy:0};br=[];for(let r=0;r<5;r++)for(let c=0;c<8;c++)br.push({x:c*60+4,y:r*22+30,a:1,h:r});sc=0;lv=3;live=false;msg=''};
+ const mv=e=>{const r=cv.getBoundingClientRect();p=Math.max(40,Math.min(440,(e.clientX-r.left)/r.width*480))};
+ cv.onpointermove=mv;cv.onpointerdown=e=>{mv(e);if(msg)init();else if(!live){live=true;b.dx=3;b.dy=-4}};
+ on(document,'keydown',e=>{if(e.key==='ArrowLeft')p=Math.max(40,p-24);if(e.key==='ArrowRight')p=Math.min(440,p+24)});
+ every(()=>{
+  if(!msg){
+   if(live){b.x+=b.dx;b.y+=b.dy;if(b.x<5||b.x>475)b.dx*=-1;if(b.y<5)b.dy*=-1;
+    if(b.y>336&&b.y<350&&Math.abs(b.x-p)<42&&b.dy>0){b.dy=-Math.abs(b.dy);b.dx=(b.x-p)/8;beep(300,30)}
+    br.forEach(k=>{if(k.a&&b.x>k.x&&b.x<k.x+56&&b.y>k.y&&b.y<k.y+18){k.a=0;b.dy*=-1;sc+=10;beep(500+k.h*100,40)}});
+    if(b.y>370){lv--;live=false;b.dx=b.dy=0;if(lv<=0)msg='Game over. Click to retry'}
+    if(!br.some(k=>k.a))msg='You win! Click to play again'}
+   else{b.x=p;b.y=330}}
+  x.clearRect(0,0,480,360);br.forEach(k=>{if(k.a){x.fillStyle=`hsl(${k.h*50},70%,55%)`;x.fillRect(k.x,k.y,56,18)}});
+  x.fillStyle='#fff';x.fillRect(p-40,346,80,8);x.beginPath();x.arc(b.x,b.y,5,0,7);x.fill();
+  x.font='14px system-ui';x.fillText(`Score ${sc}   Lives ${lv}`,8,16);if(msg){x.font='bold 24px system-ui';x.textAlign='center';x.fillText(msg,240,200);x.textAlign='left'}
+ },16);init();
+}
+
+function wordle(el){
+ const W='ABOUT CRANE SLATE HOUSE PLANT BRICK GHOST MOUSE LIGHT WORLD PIANO TRAIN SMILE CLOUD RIVER STONE FLAME GRAPE SHARP TIGER BEACH DREAM QUICK ROBOT PIXEL SPACE MAGIC OCEAN LEMON CANDY'.split(' ');
+ let ans,g,done;
+ el.innerHTML='<div id="b"></div><form id="f" class="row"><input id="i" maxlength="5" placeholder="5 letters" style="text-transform:uppercase"><button>Guess</button><button type="button" id="r" class="alt">New word</button></form><p id="m" class="big" style="font-size:18px"></p><p class="muted">Green = right spot, yellow = in the word, grey = not in it. Any 5 letters count as a guess.</p>';
+ const score=(a,s)=>{const r=Array(5).fill('#555'),u=[...a];for(let i=0;i<5;i++)if(s[i]===a[i]){r[i]='#2e7d32';u[i]=null}for(let i=0;i<5;i++)if(r[i]==='#555'){const k=u.indexOf(s[i]);if(k>=0){r[i]='#f9a825';u[k]=null}}return r};
+ const draw=()=>{$('#b',el).innerHTML=Array.from({length:6},(_,i)=>{const s=g[i],c=s?score(ans,s):[];return '<div class="row" style="margin:3px 0">'+Array.from({length:5},(_,j)=>`<div class="cell" style="width:48px;height:48px;font-size:22px;${s?`background:${c[j]};color:#fff`:''}">${s?s[j]:''}</div>`).join('')+'</div>'}).join('')};
+ const start=()=>{ans=W[Math.random()*W.length|0];g=[];done=false;$('#m',el).textContent='';draw()};
+ $('#f',el).onsubmit=e=>{e.preventDefault();const v=$('#i',el).value.toUpperCase().trim();if(done||!/^[A-Z]{5}$/.test(v))return;g.push(v);$('#i',el).value='';if(v===ans){done=true;$('#m',el).textContent='Solved in '+g.length+'!'}else if(g.length>=6){done=true;$('#m',el).textContent='The word was '+ans}draw()};
+ $('#r',el).onclick=start;start();
+}
+
+function mastermind(el){
+ const C=['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa'];let code,cur,rows,done;
+ const dot=c=>`<span style="display:inline-block;width:26px;height:26px;border-radius:50%;background:${c};margin:2px;border:1px solid var(--line)"></span>`;
+ el.innerHTML='<div id="o"></div><p class="muted">Crack the 4-color code in 10 tries. ● = right color and spot, ○ = right color, wrong spot. Colors can repeat.</p>';
+ const draw=()=>{$('#o',el).innerHTML=`<div class="row">${C.map((c,i)=>`<button data-c="${i}" style="background:${c}">&nbsp;&nbsp;&nbsp;</button>`).join('')}</div><div class="card">${cur.map(i=>dot(C[i])).join('')||'<span class="muted">Pick 4 colors</span>'} <button id="ok" ${cur.length<4||done?'disabled':''}>Guess</button> <button id="un" class="alt">Undo</button> <button id="nw" class="alt">New</button></div>`+rows.map(r=>`<div>${r.g.map(i=>dot(C[i])).join('')} <b>${'●'.repeat(r.b)}${'○'.repeat(r.w)}</b></div>`).join('')+(done?`<p class="big">${rows.at(-1).b===4?'Cracked it!':'Code was:'} ${code.map(i=>dot(C[i])).join('')}</p>`:'')};
+ const start=()=>{code=Array.from({length:4},()=>Math.random()*6|0);cur=[];rows=[];done=false;draw()};
+ el.onclick=e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.c!==undefined){if(!done&&cur.length<4){cur.push(+t.dataset.c);draw()}}
+  else if(t.id==='un'){cur.pop();draw()}else if(t.id==='nw')start();
+  else if(t.id==='ok'&&cur.length===4&&!done){let b=0,tot=0;cur.forEach((c,i)=>{if(c===code[i])b++});for(let c=0;c<6;c++)tot+=Math.min(cur.filter(v=>v===c).length,code.filter(v=>v===c).length);rows.push({g:cur,b,w:tot-b});cur=[];if(b===4||rows.length>=10)done=true;draw()}};
+ start();
+}
+
+function habit(el){
+ let L=arr('hb').filter(h=>h&&typeof h.n==='string'&&Array.isArray(h.d));
+ el.innerHTML='<form id="f" class="row"><input id="n" placeholder="New habit (e.g. Read 20 min)" style="flex:1"><button>Add</button></form><div id="l"></div><p class="muted">Tap a dot to mark that day. Today is the rightmost dot.</p>';
+ const draw=()=>{$('#l',el).innerHTML=L.map((h,i)=>{let o=h.d.includes(ymd(0))?0:1,s=0;while(h.d.includes(ymd(o))){s++;o++}
+  return `<div class="card"><div class="row"><b style="flex:1">${esc(h.n)}</b><span>🔥 ${s} day${s===1?'':'s'}</span><button class="alt" data-x="${i}">✕</button></div><div class="row">${[13,12,11,10,9,8,7,6,5,4,3,2,1,0].map(d=>`<button data-h="${i}" data-o="${d}" title="${ymd(d)}" style="width:24px;height:24px;padding:0;border-radius:50%;${h.d.includes(ymd(d))?'':'background:transparent;border:1px solid var(--line)'}"></button>`).join('')}</div></div>`}).join('')||'<p class="muted">No habits yet.</p>';store.set('hb',L)};
+ $('#f',el).onsubmit=e=>{e.preventDefault();const v=$('#n',el).value.trim();if(v){L.push({n:v,d:[]});$('#n',el).value='';draw()}};
+ $('#l',el).onclick=e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.x!==undefined)L.splice(+t.dataset.x,1);else if(t.dataset.h!==undefined){const h=L[+t.dataset.h],d=ymd(+t.dataset.o),k=h.d.indexOf(d);k<0?h.d.push(d):h.d.splice(k,1)}draw()};
+ draw();
+}
+
+function flash(el){
+ el.innerHTML='<textarea id="t" placeholder="One card per line: question | answer"></textarea><div class="row"><button id="go">Study</button><button id="sh" class="alt">Shuffle</button></div><div id="c" class="card big" style="text-align:center;min-height:120px;display:none;cursor:pointer"></div><div class="row" id="ctl" style="display:none"><button id="nx">Next</button><span id="p" class="muted"></span></div>';
+ let D=[],i=0,front=true;const t=$('#t',el);t.value=store.get('fc','Capital of Canada | Ottawa\n7 x 8 | 56');
+ const show=()=>{const c=D[i];$('#c',el).textContent=front?c[0]:c[1];$('#c',el).style.opacity=front?1:.8;$('#p',el).textContent=`${i+1}/${D.length} · click card to flip`};
+ const load=()=>{store.set('fc',t.value);D=t.value.split('\n').map(l=>l.split('|').map(s=>s.trim())).filter(c=>c[0]&&c[1]);i=0;front=true;const ok=D.length>0;$('#c',el).style.display=$('#ctl',el).style.display=ok?'':'none';if(ok)show()};
+ $('#go',el).onclick=load;$('#sh',el).onclick=()=>{load();D=shuf(D);if(D.length)show()};
+ $('#c',el).onclick=()=>{front=!front;show()};$('#nx',el).onclick=()=>{i=(i+1)%D.length;front=true;show()};
+}
+
+function kanban(el){
+ const N=['To do','Doing','Done'];let L=arr('kb').filter(c=>c&&typeof c.t==='string'&&c.c>=0&&c.c<3);
+ el.innerHTML='<form id="f" class="row"><input id="i" placeholder="New card" style="flex:1"><button>Add</button></form><div id="b" class="k3"></div>';
+ const draw=()=>{$('#b',el).innerHTML=N.map((n,c)=>`<div class="card"><b>${n}</b>${L.map((k,i)=>k.c===c?`<div class="card" style="margin:8px 0;padding:8px">${esc(k.t)}<div class="row" style="margin:4px 0 0">${c>0?`<button class="alt" data-i="${i}" data-m="-1">◀</button>`:''}${c<2?`<button class="alt" data-i="${i}" data-m="1">▶</button>`:''}<button class="alt" data-i="${i}" data-m="x">✕</button></div></div>`:'').join('')}</div>`).join('');store.set('kb',L)};
+ $('#f',el).onsubmit=e=>{e.preventDefault();const v=$('#i',el).value.trim();if(v){L.push({t:v,c:0});$('#i',el).value='';draw()}};
+ $('#b',el).onclick=e=>{const t=e.target.closest('button[data-i]');if(!t)return;const i=+t.dataset.i;if(t.dataset.m==='x')L.splice(i,1);else L[i].c+=+t.dataset.m;draw()};
+ draw();
+}
+
+function expense(el){
+ let L=arr('ex').filter(x=>x&&Number.isFinite(x.a));const C=['Food','Transport','Home','Fun','Other'];
+ el.innerHTML=`<form id="f" class="row"><input id="n" placeholder="What for" style="flex:1"><input id="a" type="number" step="any" min="0" placeholder="Amount" style="width:100px" required><select id="c">${C.map(c=>`<option>${c}</option>`).join('')}</select><button>Add</button></form><div class="card" id="s"></div><div id="l"></div>`;
+ const draw=()=>{const tot=L.reduce((a,x)=>a+x.a,0);$('#s',el).innerHTML=`<b>Total: $${tot.toFixed(2)}</b>`+C.map(c=>{const v=L.filter(x=>x.c===c).reduce((a,x)=>a+x.a,0);return `<div style="margin:6px 0"><span class="muted">${c} $${v.toFixed(2)}</span><div style="height:8px;border-radius:4px;background:var(--blue);width:${tot?v/tot*100:0}%"></div></div>`}).join('');
+  $('#l',el).innerHTML=L.map((x,i)=>`<div class="card row" style="padding:8px"><b style="flex:1">${esc(x.n)}</b><span class="muted">${esc(x.c)}</span><span>$${x.a.toFixed(2)}</span><button class="alt" data-x="${i}">✕</button></div>`).join('');store.set('ex',L)};
+ $('#f',el).onsubmit=e=>{e.preventDefault();L.unshift({n:$('#n',el).value.trim()||'Item',a:+$('#a',el).value,c:$('#c',el).value});$('#n',el).value=$('#a',el).value='';draw()};
+ $('#l',el).onclick=e=>{const t=e.target.closest('button[data-x]');if(t){L.splice(+t.dataset.x,1);draw()}};draw();
+}
+
+function timetrack(el){
+ let L=arr('tt').filter(x=>x&&typeof x.n==='string'&&Number.isFinite(x.ms));
+ const fm=ms=>{const s=Math.floor(ms/1000);return [s/3600|0,s%3600/60|0,s%60].map(v=>String(v).padStart(2,'0')).join(':')};
+ el.innerHTML='<form id="f" class="row"><input id="n" placeholder="Task name" style="flex:1"><button>Add</button></form><div id="l"></div>';
+ const draw=()=>{$('#l',el).innerHTML=L.map((x,i)=>`<div class="card row"><b style="flex:1">${esc(x.n)}</b><span class="big">${fm(x.ms+(x.s?Date.now()-x.s:0))}</span><button data-t="${i}">${x.s?'Stop':'Start'}</button><button class="alt" data-x="${i}">✕</button></div>`).join('')||'<p class="muted">No tasks yet.</p>';store.set('tt',L)};
+ $('#f',el).onsubmit=e=>{e.preventDefault();const v=$('#n',el).value.trim();if(v){L.push({n:v,ms:0,s:0});$('#n',el).value='';draw()}};
+ $('#l',el).onclick=e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.x!==undefined)L.splice(+t.dataset.x,1);else if(t.dataset.t!==undefined){const x=L[+t.dataset.t];if(x.s){x.ms+=Date.now()-x.s;x.s=0}else x.s=Date.now()}draw()};
+ every(()=>{if(L.some(x=>x.s))draw()},1000);draw();
+}
+
+function eisen(el){
+ const Q=[['Do first','Urgent + important'],['Schedule','Important, not urgent'],['Delegate','Urgent, not important'],['Drop','Neither']],S=store.get('ei',[]);
+ el.innerHTML='<div class="k4">'+Q.map((q,i)=>`<div class="card"><b>${q[0]}</b><div class="muted">${q[1]}</div><textarea data-i="${i}" placeholder="One task per line"></textarea></div>`).join('')+'</div>';
+ el.querySelectorAll('textarea').forEach((t,i)=>{t.value=Array.isArray(S)&&typeof S[i]==='string'?S[i]:'';t.oninput=()=>store.set('ei',[...el.querySelectorAll('textarea')].map(x=>x.value))});
+}
+
+function diff(el){
+ el.innerHTML='<div class="k4"><textarea id="a" placeholder="Original"></textarea><textarea id="b" placeholder="Changed"></textarea></div><div class="card" id="o" style="font-family:ui-monospace,monospace;font-size:13px;white-space:pre-wrap"></div>';
+ const run=()=>{const a=$('#a',el).value.split('\n'),b=$('#b',el).value.split('\n'),m=a.length,n=b.length;if(m*n>4e6){$('#o',el).textContent='Texts too long for this tool.';return}
+  const t=Array.from({length:m+1},()=>new Uint16Array(n+1));for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)t[i][j]=a[i]===b[j]?t[i+1][j+1]+1:Math.max(t[i+1][j],t[i][j+1]);
+  const D=s=>`<div style="background:rgba(211,47,47,.22)">- ${esc(s)}</div>`,A=s=>`<div style="background:rgba(46,125,50,.28)">+ ${esc(s)}</div>`;let i=0,j=0,h='';
+  while(i<m&&j<n){if(a[i]===b[j]){h+=`<div>  ${esc(a[i])}</div>`;i++;j++}else if(t[i+1][j]>=t[i][j+1])h+=D(a[i++]);else h+=A(b[j++])}
+  while(i<m)h+=D(a[i++]);while(j<n)h+=A(b[j++]);$('#o',el).innerHTML=h};
+ el.oninput=run;run();
+}
+
+function drums(el){
+ const R=[['Kick',110,140],['Snare',240,70],['Hat',1800,25],['Clap',900,45]];let G=R.map(()=>Array(8).fill(0)),on_=false,st=0,tm;G[0][0]=G[0][4]=G[1][2]=G[1][6]=1;for(let i=0;i<8;i++)G[2][i]=1;
+ el.innerHTML='<div class="row"><button id="go">Play</button><label>BPM <input id="bp" type="range" min="60" max="200" value="110"></label><b id="bv">110</b></div><div id="g"></div>';
+ const draw=()=>{$('#g',el).innerHTML=R.map((r,i)=>`<div class="row" style="margin:3px 0"><span style="width:50px">${r[0]}</span>${G[i].map((v,j)=>`<button data-r="${i}" data-c="${j}" style="width:34px;height:34px;padding:0;${v?'':'background:transparent;border:1px solid var(--line);'}${j===st&&on_?'outline:2px solid #f9a825':''}"></button>`).join('')}</div>`).join('')};
+ const tick=()=>{if(!on_)return;R.forEach((r,i)=>{if(G[i][st])beep(r[1],r[2])});draw();st=(st+1)%8;tm=setTimeout(tick,30000/+$('#bp',el).value)};
+ cleanups.push(()=>{on_=false;clearTimeout(tm)});
+ $('#go',el).onclick=e=>{on_=!on_;e.target.textContent=on_?'Stop':'Play';st=0;clearTimeout(tm);if(on_)tick();else draw()};
+ $('#bp',el).oninput=e=>$('#bv',el).textContent=e.target.value;
+ $('#g',el).onclick=e=>{const t=e.target.closest('button[data-r]');if(t){const r=+t.dataset.r,c=+t.dataset.c;G[r][c]^=1;draw()}};draw();
+}
+
+function tuner(el){
+ const S=[['E2',82.41],['A2',110],['D3',146.83],['G3',196],['B3',246.94],['E4',329.63]];
+ el.innerHTML='<p class="muted">Reference tones for standard guitar tuning (low to high). Tune your string until it matches.</p><div class="row">'+S.map(s=>`<button data-f="${s[1]}">${s[0]}</button>`).join('')+'</div>';
+ el.onclick=e=>{const t=e.target.closest('button[data-f]');if(t)beep(+t.dataset.f,2000)};
+}
+
+function cssgen(el){
+ const sl=(id,l,min,max,v)=>`<label>${l} <input id="${id}" type="range" min="${min}" max="${max}" value="${v}"></label>`;
+ el.innerHTML=`<div class="row">${sl('r','Radius',0,60,16)}${sl('sx','Shadow X',-40,40,0)}${sl('sy','Shadow Y',-40,40,10)}${sl('sb','Blur',0,80,24)}${sl('an','Angle',0,360,135)}</div><div class="row"><label>Color 1 <input type="color" id="c1" value="#42a5f5"></label><label>Color 2 <input type="color" id="c2" value="#7e57c2"></label></div><div id="pv" style="height:160px;margin:12px 0"></div><textarea id="o" readonly style="min-height:90px"></textarea><button id="cp" class="alt">Copy CSS</button>`;
+ const run=()=>{const v=id=>$('#'+id,el).value,css=`background: linear-gradient(${v('an')}deg, ${v('c1')}, ${v('c2')});\nborder-radius: ${v('r')}px;\nbox-shadow: ${v('sx')}px ${v('sy')}px ${v('sb')}px rgba(0,0,0,.3);`;$('#pv',el).style.cssText=css;$('#o',el).value=css};
+ el.oninput=run;$('#cp',el).onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($('#o',el).value).catch(()=>{});run();
+}
+
+function bingo(el){
+ el.innerHTML='<textarea id="t" placeholder="One item per line (24+ works best)"></textarea><div class="row"><button id="g">Make a card</button></div><div id="b" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:520px"></div><p id="m" class="big"></p>';
+ const t=$('#t',el);t.value=store.get('bg','');let M;
+ const wins=()=>{const L=[];for(let i=0;i<5;i++){L.push([0,1,2,3,4].map(j=>i*5+j),[0,1,2,3,4].map(j=>j*5+i))}L.push([0,6,12,18,24],[4,8,12,16,20]);return L.some(l=>l.every(i=>M[i]))};
+ $('#g',el).onclick=()=>{store.set('bg',t.value);const I=t.value.split('\n').map(s=>s.trim()).filter(Boolean);if(I.length<24){$('#m',el).textContent='Need at least 24 items.';return}
+  const c=shuf(I).slice(0,24);c.splice(12,0,'FREE');M=c.map((_,i)=>i===12);$('#m',el).textContent='';
+  $('#b',el).innerHTML=c.map((s,i)=>`<button class="cell" data-i="${i}" style="aspect-ratio:1;font-size:12px;padding:4px;${M[i]?'background:var(--blue);color:#fff':''}">${esc(s)}</button>`).join('')};
+ $('#b',el).onclick=e=>{const b=e.target.closest('button[data-i]');if(!b)return;const i=+b.dataset.i;M[i]=!M[i];b.style.background=M[i]?'var(--blue)':'var(--card)';b.style.color=M[i]?'#fff':'var(--fg)';$('#m',el).textContent=wins()?'BINGO! 🎉':''};
+}
+
+const T=[
+ {id:'breakout',n:'Breakout',c:'Games',i:'🧱',d:'Bounce the ball, smash the bricks',f:breakout},
+ {id:'wordle',n:'Word guess',c:'Games',i:'🟩',d:'Wordle-style 5-letter puzzle',f:wordle},
+ {id:'mastermind',n:'Mastermind',c:'Games',i:'🎯',d:'Crack the color code',f:mastermind},
+ {id:'bingo',n:'Bingo cards',c:'Games',i:'🅱️',d:'Make cards from your own list',f:bingo},
+ {id:'habit',n:'Habit tracker',c:'Productivity',i:'🔥',d:'Daily streaks, 14-day view',f:habit},
+ {id:'kanban',n:'Kanban board',c:'Productivity',i:'🗂️',d:'To do, doing, done',f:kanban},
+ {id:'timetrack',n:'Time tracker',c:'Productivity',i:'⏱️',d:'Per-task stopwatches',f:timetrack},
+ {id:'eisen',n:'Eisenhower matrix',c:'Productivity',i:'🧭',d:'Sort tasks by urgency',f:eisen},
+ {id:'flash',n:'Flashcards',c:'Study',i:'📇',d:'Write cards, flip, shuffle',f:flash},
+ {id:'expense',n:'Expense tracker',c:'Money',i:'💵',d:'Spending by category',f:expense},
+ {id:'diff',n:'Diff checker',c:'Dev tools',i:'🔀',d:'Compare two texts line by line',f:diff},
+ {id:'cssgen',n:'CSS generator',c:'Dev tools',i:'🎛️',d:'Gradient, radius, shadow',f:cssgen},
+ {id:'drums',n:'Drum machine',c:'Audio',i:'🥁',d:'8-step beat sequencer',f:drums},
+ {id:'tuner',n:'Guitar tuner tones',c:'Audio',i:'🎸',d:'Reference notes for each string',f:tuner}
+];
+let Q='',CAT='All';
+function home(app){
+ const cats=['All',...new Set(T.map(t=>t.c))];
+ app.innerHTML='<input id="q" type="search" placeholder="Search tools…" style="width:100%;font-size:16px;margin-top:12px"><div class="chips" id="ch"></div><div id="g" class="grid"></div>';
+ const draw=()=>{$('#ch',app).innerHTML=cats.map(c=>`<button class="chip ${c===CAT?'on':''}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+  const q=Q.toLowerCase();$('#g',app).innerHTML=T.filter(t=>(CAT==='All'||t.c===CAT)&&(t.n+' '+t.d).toLowerCase().includes(q)).map(t=>`<a class="tile" href="#/${t.id}"><div class="i">${t.i}</div><b>${esc(t.n)}</b><span>${esc(t.d)}</span></a>`).join('')};
+ $('#q',app).oninput=e=>{Q=e.target.value;draw()};$('#ch',app).onclick=e=>{const b=e.target.closest('button[data-c]');if(b){CAT=b.dataset.c;draw()}};draw();
+}
+function route(){
+ cleanups.splice(0).forEach(f=>{try{f()}catch(e){}});
+ const id=location.hash.replace(/^#\/?/,''),t=T.find(x=>x.id===id),app=$('#app');app.innerHTML='';
+ $('#sub').textContent=T.length+' extra tools';
+ if(!t){home(app);return}
+ app.innerHTML=`<a class="back" href="#/">← All tools</a><h2>${t.i} ${esc(t.n)}</h2>`;
+ const el=document.createElement('div');app.appendChild(el);
+ try{t.f(el)}catch(e){el.innerHTML='<div class="card">Something went wrong: '+esc(e.message)+'</div>'}
+}
+addEventListener('hashchange',route);route();
+</script></body></html>
